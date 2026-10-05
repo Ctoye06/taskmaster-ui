@@ -4,6 +4,10 @@ import Layout from "../../layouts/Layout.astro";
 import TerminalWindow from "../../components/TerminalWindow.astro";
 import StatCard from "../../components/StatCard.astro";
 import ComparePicker from "../../components/ComparePicker.astro";
+import ShareButton from "../../components/ShareButton.astro";
+import BackLink from "../../components/BackLink.astro";
+import PointsChart from "../../components/PointsChart.astro";
+import AchievementBadge from "../../components/AchievementBadge.astro";
 import { withBase } from "../../lib/url";
 import { players } from "../../data/players";
 import {
@@ -11,6 +15,8 @@ import {
   getPlayerResults,
   getPlayerCompareOptions,
   getPlayerInitials,
+  getPlayerAchievements,
+  getPlayerProgressionChart,
 } from "../../data/queries";
 
 export const getStaticPaths = (() => {
@@ -32,6 +38,12 @@ const initials = getPlayerInitials(player);
 const hasPlayed = standing.tasksCompleted > 0;
 const bestFinish = hasPlayed ? Math.min(...results.map((r) => r.position)) : 0;
 const compareOptions = getPlayerCompareOptions(player.id);
+const achievements = getPlayerAchievements(player.id);
+const progressionChart = getPlayerProgressionChart(player.id);
+
+const pageDescription = hasPlayed
+  ? `${player.name} is #${rank} in the EAYL Taskmaster with ${standing.points} pts and ${standing.wins} win${standing.wins === 1 ? "" : "s"} across ${standing.tasksCompleted} task${standing.tasksCompleted === 1 ? "" : "s"}.`
+  : `${player.name} is on the EAYL Taskmaster roster and yet to be scored.`;
 
 const medal = (position: number) =>
   position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
@@ -51,14 +63,21 @@ const positionClasses = (position: number) => {
   return "border-grid bg-term-bg text-ink-dim";
 };
 
-const btnGhost =
-  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
 ---
 
-<Layout title="EAYL Taskmaster">
+<Layout title={player.name} description={pageDescription}>
   <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
     <!-- Back link -->
-    <a href={withBase("/players")} class={btnGhost}>&larr; ALL PLAYERS</a>
+    <!-- Back link + share -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <BackLink href="/players" label="ALL PLAYERS" />
+      <ShareButton
+        url={new URL(Astro.url.pathname, Astro.site).href}
+        shareTitle={`${player.name} · EAYL Taskmaster`}
+        shareText={pageDescription}
+        label="SHARE PROFILE"
+      />
+    </div>
 
     <!-- Header -->
     <header class="mt-6">
@@ -128,6 +147,27 @@ const btnGhost =
       </div>
     </section>
 
+    <!-- Achievements -->
+    {
+      achievements.length > 0 && (
+        <section class="mt-8" aria-labelledby="achievements-heading">
+          <h2
+            id="achievements-heading"
+            class="prompt mb-3 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+          >
+            achievements --unlocked
+          </h2>
+          <ul class="flex flex-wrap gap-2">
+            {achievements.map((achievement) => (
+              <li>
+                <AchievementBadge achievement={achievement} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
     <!-- Compare with… entry point -->
     <ComparePicker
       playerId={player.id}
@@ -136,6 +176,29 @@ const btnGhost =
       opponents={compareOptions.opponents}
       class="mt-8"
     />
+
+    <!-- Points progression -->
+    {
+      progressionChart && (
+        <section class="mt-12" aria-labelledby="progression-heading">
+          <h2
+            id="progression-heading"
+            class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+          >
+            points --over-time
+          </h2>
+          <TerminalWindow
+            title={`~/players/${player.id}.chart`}
+            meta={`${standing.points} pts`}
+          >
+            <PointsChart
+              data={progressionChart}
+              ariaLabel={`${player.name}'s cumulative points, week by week.`}
+            />
+          </TerminalWindow>
+        </section>
+      )
+    }
 
     <!-- Task-by-task record -->
     <section class="mt-12">

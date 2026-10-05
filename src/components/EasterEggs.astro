@@ -1,0 +1,217 @@
+---
+// Global easter eggs: a terminal toast system plus three hidden triggers —
+// the Konami code (turbo CRT mode), the navbar traffic-light combo, and an
+// idle "egg rain" screensaver. All are progressive enhancement: nothing here
+// affects the no-JS render, and every effect respects prefers-reduced-motion.
+import { withBase } from "../lib/url";
+
+const eggSrc = withBase("/favicon.svg");
+---
+
+<!-- Carries build-time config (the favicon URL) into the client script. -->
+<div id="egg-config" data-egg-src={eggSrc} hidden></div>
+
+<!-- Terminal-style toast notifications for easter-egg triggers. -->
+<div
+  id="egg-toast-layer"
+  class="pointer-events-none fixed inset-x-0 bottom-4 z-[95] flex flex-col items-center gap-2 px-4"
+  aria-live="polite"
+>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const prefersReduced = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  const toastLayer = document.getElementById("egg-toast-layer");
+  const eggSrc =
+    document.getElementById("egg-config")?.dataset.eggSrc ?? "/favicon.svg";
+
+  // ── Shared toast ───────────────────────────────────────────────────────
+  type Tone = "acid" | "magenta" | "amber";
+  const toneClass: Record<Tone, string> = {
+    acid: "border-acid text-acid",
+    magenta: "border-magenta text-magenta",
+    amber: "border-amber text-amber",
+  };
+
+  function toast(message: string, tone: Tone = "acid") {
+    if (!toastLayer) return;
+    const el = document.createElement("div");
+    el.className = `pointer-events-none translate-y-2 rounded-md border bg-term-panel/95 px-4 py-2 text-sm font-semibold tracking-wide opacity-0 shadow-xl transition-all duration-300 ${toneClass[tone]}`;
+    const dollar = document.createElement("span");
+    dollar.setAttribute("aria-hidden", "true");
+    dollar.textContent = "$ ";
+    el.appendChild(dollar);
+    el.appendChild(document.createTextNode(message));
+    toastLayer.appendChild(el);
+    requestAnimationFrame(() =>
+      el.classList.remove("opacity-0", "translate-y-2"),
+    );
+    window.setTimeout(() => {
+      el.classList.add("opacity-0");
+      window.setTimeout(() => el.remove(), 350);
+    }, 2600);
+  }
+
+  // Expose so component-local scripts (countdown, score badge) can reuse it.
+  (window as unknown as { __eggToast?: typeof toast }).__eggToast = toast;
+
+  // ── Konami code → turbo CRT mode ───────────────────────────────────────
+  const KONAMI = [
+    "ArrowUp",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowLeft",
+    "ArrowRight",
+    "b",
+    "a",
+  ];
+  let kProgress = 0;
+
+  function toggleTurbo() {
+    const on = root.toggleAttribute("data-turbo");
+    try {
+      localStorage.setItem("eayl-turbo", on ? "1" : "0");
+    } catch {
+      /* storage unavailable — effect still applies this session */
+    }
+    toast(
+      on ? "TURBO CRT MODE ENGAGED" : "turbo mode disengaged",
+      on ? "acid" : "amber",
+    );
+  }
+
+  window.addEventListener("keydown", (e) => {
+    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (key === KONAMI[kProgress]) {
+      kProgress++;
+      if (kProgress === KONAMI.length) {
+        kProgress = 0;
+        toggleTurbo();
+      }
+    } else {
+      kProgress = key === KONAMI[0] ? 1 : 0;
+    }
+  });
+
+  try {
+    if (localStorage.getItem("eayl-turbo") === "1")
+      root.setAttribute("data-turbo", "");
+  } catch {
+    /* storage unavailable */
+  }
+
+  // ── Navbar traffic-light combo (red → amber → green) ───────────────────
+  const TL_SEQUENCE = ["red", "amber", "green"];
+  let tlProgress: string[] = [];
+  let tlTimer: number | undefined;
+  const tlDots = document.querySelectorAll<HTMLElement>("[data-tl]");
+
+  function unlockTrafficController() {
+    toast("ACHIEVEMENT UNLOCKED — traffic controller", "magenta");
+    try {
+      localStorage.setItem("eayl-egg-tl", "1");
+    } catch {
+      /* storage unavailable */
+    }
+    if (prefersReduced) return;
+    tlDots.forEach((dot, i) =>
+      dot.animate([{ opacity: 1 }, { opacity: 0.15 }, { opacity: 1 }], {
+        duration: 550,
+        delay: i * 130,
+        easing: "ease-in-out",
+      }),
+    );
+  }
+
+  tlDots.forEach((dot) => {
+    dot.style.cursor = "pointer";
+    dot.addEventListener("click", (e) => {
+      // Keep the brand link from navigating when the dots are being played.
+      e.preventDefault();
+      e.stopPropagation();
+      const color = dot.dataset.tl ?? "";
+      tlProgress.push(color);
+      window.clearTimeout(tlTimer);
+      tlTimer = window.setTimeout(() => (tlProgress = []), 1500);
+
+      const expected = TL_SEQUENCE.slice(0, tlProgress.length).join();
+      if (tlProgress.join() !== expected) {
+        tlProgress = color === TL_SEQUENCE[0] ? [color] : [];
+        return;
+      }
+      if (tlProgress.length === TL_SEQUENCE.length) {
+        tlProgress = [];
+        unlockTrafficController();
+      }
+    });
+  });
+
+  // ── Idle "egg rain" screensaver ────────────────────────────────────────
+  const IDLE_MS = 60_000;
+  let idleTimer: number | undefined;
+  let saverActive = false;
+
+  function buildScreensaver(): HTMLElement {
+    const overlay = document.createElement("div");
+    overlay.id = "egg-screensaver";
+    overlay.setAttribute("aria-hidden", "true");
+
+    for (let i = 0; i < 20; i++) {
+      const img = document.createElement("img");
+      img.src = eggSrc;
+      img.alt = "";
+      img.className = "egg-drop";
+      img.style.left = `${Math.random() * 100}%`;
+      img.style.setProperty("--egg-size", `${24 + Math.random() * 40}px`);
+      img.style.setProperty("--egg-dur", `${5 + Math.random() * 6}s`);
+      // Negative delay so the rain is already mid-fall when it appears.
+      img.style.setProperty("--egg-delay", `${-Math.random() * 8}s`);
+      const dir = Math.random() > 0.5 ? 1 : -1;
+      img.style.setProperty(
+        "--egg-spin",
+        `${dir * (120 + Math.random() * 240)}deg`,
+      );
+      overlay.appendChild(img);
+    }
+
+    const hint = document.createElement("p");
+    hint.className = "egg-hint";
+    hint.textContent = "// idle — move to resume";
+    overlay.appendChild(hint);
+    return overlay;
+  }
+
+  function startSaver() {
+    if (saverActive || prefersReduced) return;
+    saverActive = true;
+    document.body.appendChild(buildScreensaver());
+  }
+
+  function stopSaver() {
+    if (!saverActive) return;
+    saverActive = false;
+    document.getElementById("egg-screensaver")?.remove();
+  }
+
+  function resetIdle() {
+    stopSaver();
+    window.clearTimeout(idleTimer);
+    if (!prefersReduced) idleTimer = window.setTimeout(startSaver, IDLE_MS);
+  }
+
+  [
+    "mousemove",
+    "mousedown",
+    "keydown",
+    "scroll",
+    "touchstart",
+    "wheel",
+  ].forEach((ev) => window.addEventListener(ev, resetIdle, { passive: true }));
+  resetIdle();
+</script>

@@ -3,19 +3,34 @@ import "../styles/global.css";
 import Navbar from "../components/Navbar.astro";
 import Footer from "../components/Footer.astro";
 import CommandPalette from "../components/CommandPalette.astro";
+import EasterEggs from "../components/EasterEggs.astro";
 import WhatsNewBanner from "../components/WhatsNewBanner.astro";
 import { getCommandPaletteItems, getWhatsNew } from "../data/queries";
 import { withBase } from "../lib/url";
 
 interface Props {
+  /** Page-specific title segment; the site name is appended automatically. */
   title?: string;
   description?: string;
+  /** Social share image, relative to the site root. */
+  image?: string;
 }
 
+const SITE_NAME = "EAYL Taskmaster";
+
 const {
-  title = "EAYL Taskmaster",
+  title,
   description = "16 weeks. 25 players. One winner. The Engineering Academy Taskmaster challenge.",
+  image = "/og.png",
 } = Astro.props;
+
+// Page-specific titles read "<page> · EAYL Taskmaster"; the home page (no
+// title prop) just uses the site name on its own.
+const fullTitle = title ? `${title} · ${SITE_NAME}` : SITE_NAME;
+
+// Absolute URLs for canonical + social tags (Astro.site is set in the config).
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const socialImage = new URL(withBase(image), Astro.site);
 
 const paletteItems = getCommandPaletteItems();
 const whatsNew = getWhatsNew();
@@ -43,13 +58,31 @@ const whatsNew = getWhatsNew();
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#080b10" />
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph / Facebook / Slack / Teams -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <title>{title}</title>
+    <title>{fullTitle}</title>
   </head>
   <body class="min-h-screen flex flex-col antialiased">
     <a
@@ -64,5 +97,6 @@ const whatsNew = getWhatsNew();
     </main>
     <Footer />
     <CommandPalette items={paletteItems} />
+    <EasterEggs />
   </body>
 </html>

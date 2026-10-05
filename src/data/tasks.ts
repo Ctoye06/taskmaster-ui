@@ -30,7 +30,7 @@ const schedule: Omit<Task, "status">[] = [
   {
     id: "week-01",
     weekNumber: 1,
-    title: "Shell We Survive?",
+    title: "Eggy?",
     description: "Keep your egg alive for the entire week.",
     brief:
       "For the next seven days you are responsible for someone who cannot speak, cannot walk, and absolutely cannot be allowed to crack under pressure. Keep your egg safe until Friday afternoon. Your time starts now.",

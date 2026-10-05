@@ -7,6 +7,8 @@ import TaskStatusBadge from "../../components/TaskStatusBadge.astro";
 import Countdown from "../../components/Countdown.astro";
 import ScoreBadge from "../../components/ScoreBadge.astro";
 import TaskPager from "../../components/TaskPager.astro";
+import ShareButton from "../../components/ShareButton.astro";
+import BackLink from "../../components/BackLink.astro";
 import { tasks } from "../../data/tasks";
 import {
   getTaskSummary,
@@ -33,6 +35,13 @@ const pager = getTaskPager(task.id);
 
 const weekLabel = `WEEK ${String(task.weekNumber).padStart(2, "0")}`;
 const isLocked = task.status === "upcoming";
+
+const pageTitle = `${weekLabel} — ${task.title}`;
+const pageDescription = isLocked
+  ? `${weekLabel} of the EAYL Taskmaster is still classified. The brief unlocks soon.`
+  : winner
+    ? `${task.description} Won by ${winner.name}${winningScore ? ` with ${winningScore} pts` : ""}.`
+    : task.description;
 
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
   weekday: "long",
@@ -61,14 +70,21 @@ const rules = [
 const medal = (position: number) =>
   position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
 
-const btnGhost =
-  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
 ---
 
-<Layout title="EAYL Taskmaster">
+<Layout title={pageTitle} description={pageDescription}>
   <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
     <!-- Back link -->
-    <a href={withBase("/tasks")} class={btnGhost}>&larr; ALL TASKS</a>
+    <!-- Back link + share -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <BackLink href="/tasks" label="ALL TASKS" />
+      <ShareButton
+        url={new URL(Astro.url.pathname, Astro.site).href}
+        shareTitle={`${weekLabel} — ${task.title} · EAYL Taskmaster`}
+        shareText={pageDescription}
+        label="SHARE TASK"
+      />
+    </div>
 
     <!-- Header -->
     <header class="mt-6">
@@ -141,6 +157,32 @@ const btnGhost =
         <p class="mt-1 font-semibold text-amber">
           {formatStamp(task.deadline)}
         </p>
+        {
+          task.status !== "completed" && (
+            <a
+              href={withBase(`/tasks/${task.id}.ics`)}
+              download={`${task.id}-deadline.ics`}
+              class="mt-4 inline-flex items-center gap-2 rounded-md border border-grid px-3 py-1.5 text-[11px] font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink focus-visible:outline-none"
+            >
+              <svg
+                class="h-3.5 w-3.5 text-ink-faint"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              ADD TO CALENDAR
+            </a>
+          )
+        }
       </div>
 
       <div

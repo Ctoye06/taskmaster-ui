@@ -1,0 +1,101 @@
+---
+// Terminal-styled share control. Uses the Web Share API where available
+// (mobile), otherwise copies the link to the clipboard with inline feedback.
+// Driven entirely by data-* attributes so one bundled script handles every
+// instance on the page.
+
+interface Props {
+  /** Absolute URL to share. */
+  url: string;
+  /** Title passed to the Web Share API. */
+  shareTitle: string;
+  /** Supporting text passed to the Web Share API. */
+  shareText?: string;
+  /** Visible button label (idle state). */
+  label?: string;
+  /** Extra classes merged last so callers can tweak layout. */
+  class?: string;
+}
+
+const {
+  url,
+  shareTitle,
+  shareText = "",
+  label = "SHARE",
+  class: className = "",
+} = Astro.props;
+---
+
+<button
+  type="button"
+  data-share
+  data-share-url={url}
+  data-share-title={shareTitle}
+  data-share-text={shareText}
+  data-share-label={label}
+  class:list={[
+    "group inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink focus-visible:outline-none",
+    className,
+  ]}
+>
+  <svg
+    class="h-3.5 w-3.5 text-ink-faint transition-colors group-hover:text-acid"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path>
+    <polyline points="16 6 12 2 8 6"></polyline>
+    <line x1="12" y1="2" x2="12" y2="15"></line>
+  </svg>
+  <span data-share-text-slot>{label}</span>
+</button>
+
+<script>
+  const buttons =
+    document.querySelectorAll<HTMLButtonElement>("button[data-share]");
+
+  buttons.forEach((button) => {
+    const slot = button.querySelector<HTMLSpanElement>(
+      "[data-share-text-slot]",
+    );
+    const idleLabel = button.dataset.shareLabel ?? "SHARE";
+    let resetTimer: number | undefined;
+
+    const flash = (message: string) => {
+      if (!slot) return;
+      window.clearTimeout(resetTimer);
+      slot.textContent = message;
+      resetTimer = window.setTimeout(() => {
+        slot.textContent = idleLabel;
+      }, 2000);
+    };
+
+    button.addEventListener("click", async () => {
+      const url = button.dataset.shareUrl ?? window.location.href;
+      const title = button.dataset.shareTitle ?? document.title;
+      const text = button.dataset.shareText ?? "";
+
+      // Prefer the native share sheet (mobile / supported browsers).
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, text, url });
+          return;
+        } catch {
+          // User dismissed the sheet, or share failed — fall through to copy.
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(url);
+        flash("LINK COPIED");
+      } catch {
+        flash("COPY FAILED");
+      }
+    });
+  });
+</script>

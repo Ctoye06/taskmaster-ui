@@ -105,6 +105,11 @@ const units: { key: keyof typeof initial; label: string }[] = [
     const deadline = new Date(root.dataset.deadline ?? "").getTime();
     if (Number.isNaN(deadline)) return;
 
+    // Only celebrate zero if the timer was actually counting down live, so a
+    // page loaded after the deadline doesn't trigger the effect on arrival.
+    const startedLive = deadline - Date.now() > 0;
+    let firedZero = false;
+
     const cells = {
       days: root.querySelector<HTMLElement>('[data-unit="days"]'),
       hours: root.querySelector<HTMLElement>('[data-unit="hours"]'),
@@ -146,6 +151,22 @@ const units: { key: keyof typeof initial; label: string }[] = [
         root.classList.remove("is-urgent", "is-critical");
         setWarn(null);
         doneEl?.removeAttribute("hidden");
+
+        // Easter egg: a one-off glitch + toast the moment the clock dies.
+        if (startedLive && !firedZero) {
+          firedZero = true;
+          root.classList.add("cd-zero-glitch");
+          window.setTimeout(
+            () => root.classList.remove("cd-zero-glitch"),
+            1400,
+          );
+          (
+            window as unknown as {
+              __eggToast?: (m: string, t?: string) => void;
+            }
+          ).__eggToast?.("TIME'S UP — your task is over", "amber");
+        }
+
         clearInterval(timer);
       }
     }

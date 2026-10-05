@@ -1,0 +1,198 @@
+---
+import type { ChartAccent, PointsChartData } from "../types";
+
+interface Props {
+  data: PointsChartData;
+  /** Accessible summary of what the chart shows. */
+  ariaLabel: string;
+  class?: string;
+}
+
+const { data, ariaLabel, class: className = "" } = Astro.props;
+const { weeks, series, maxValue } = data;
+
+// Fixed drawing surface; the SVG scales responsively via viewBox.
+const W = 640;
+const H = 240;
+const pad = { top: 16, right: 16, bottom: 28, left: 32 };
+const plotW = W - pad.left - pad.right;
+const plotH = H - pad.top - pad.bottom;
+
+const n = weeks.length;
+const xFor = (i: number) =>
+  n <= 1 ? pad.left + plotW / 2 : pad.left + (plotW * i) / (n - 1);
+const yFor = (value: number) => pad.top + plotH - (value / maxValue) * plotH;
+
+// Horizontal gridlines at quarters of the max.
+const gridLines = [0, 0.25, 0.5, 0.75, 1].map((f) => ({
+  y: pad.top + plotH - f * plotH,
+  value: Math.round(maxValue * f),
+}));
+
+const strokeClass: Record<ChartAccent, string> = {
+  acid: "stroke-acid",
+  magenta: "stroke-magenta",
+  cyan: "stroke-cyan",
+  amber: "stroke-amber",
+  "ink-dim": "stroke-ink-dim",
+};
+const fillClass: Record<ChartAccent, string> = {
+  acid: "fill-acid",
+  magenta: "fill-magenta",
+  cyan: "fill-cyan",
+  amber: "fill-amber",
+  "ink-dim": "fill-ink-dim",
+};
+const textClass: Record<ChartAccent, string> = {
+  acid: "text-acid",
+  magenta: "text-magenta",
+  cyan: "text-cyan",
+  amber: "text-amber",
+  "ink-dim": "text-ink-dim",
+};
+const bgClass: Record<ChartAccent, string> = {
+  acid: "bg-acid",
+  magenta: "bg-magenta",
+  cyan: "bg-cyan",
+  amber: "bg-amber",
+  "ink-dim": "bg-ink-dim",
+};
+
+const singleSeries = series.length === 1;
+
+const pointsFor = (values: number[]) =>
+  values.map((v, i) => `${xFor(i)},${yFor(v)}`).join(" ");
+
+// Closed polygon (down to the baseline) for the subtle area fill on a
+// single-series chart.
+const areaFor = (values: number[]) =>
+  `${pad.left},${pad.top + plotH} ${pointsFor(values)} ${xFor(values.length - 1)},${pad.top + plotH}`;
+---
+
+<figure class:list={["not-prose", className]}>
+  <svg
+    viewBox={`0 0 ${W} ${H}`}
+    class="h-auto w-full"
+    role="img"
+    aria-label={ariaLabel}
+  >
+    <!-- gridlines + y-axis labels -->
+    {
+      gridLines.map((line) => (
+        <g>
+          <line
+            x1={pad.left}
+            y1={line.y}
+            x2={W - pad.right}
+            y2={line.y}
+            class="stroke-grid-soft"
+            stroke-width="1"
+            vector-effect="non-scaling-stroke"
+          />
+          <text
+            x={pad.left - 6}
+            y={line.y + 3}
+            text-anchor="end"
+            class="fill-ink-faint text-[9px]"
+          >
+            {line.value}
+          </text>
+        </g>
+      ))
+    }
+
+    <!-- x-axis week labels -->
+    {
+      weeks.map((week, i) => (
+        <text
+          x={xFor(i)}
+          y={H - 8}
+          text-anchor="middle"
+          class="fill-ink-faint text-[9px]"
+        >
+          {week.label}
+        </text>
+      ))
+    }
+
+    <!-- area fill (single-series only) -->
+    {
+      singleSeries && (
+        <polygon
+          points={areaFor(series[0].values)}
+          class={fillClass[series[0].accent]}
+          fill-opacity="0.08"
+        />
+      )
+    }
+
+    <!-- series lines + nodes -->
+    {
+      series.map((s) => (
+        <g>
+          <polyline
+            points={pointsFor(s.values)}
+            fill="none"
+            class={strokeClass[s.accent]}
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+            vector-effect="non-scaling-stroke"
+          />
+          {s.values.map((v, i) => (
+            <circle
+              cx={xFor(i)}
+              cy={yFor(v)}
+              r="3"
+              class:list={["fill-term-bg", strokeClass[s.accent]]}
+              stroke-width="1.5"
+              vector-effect="non-scaling-stroke"
+            />
+          ))}
+        </g>
+      ))
+    }
+  </svg>
+
+  {
+    !singleSeries && (
+      <figcaption class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px]">
+        {series.map((s) => (
+          <span class="flex items-center gap-1.5">
+            <span
+              class:list={["h-2 w-2 rounded-full", bgClass[s.accent]]}
+              aria-hidden="true"
+            />
+            <span class="text-ink-dim">{s.label}</span>
+            <span class:list={["font-bold tabular-nums", textClass[s.accent]]}>
+              {s.total}
+            </span>
+          </span>
+        ))}
+      </figcaption>
+    )
+  }
+
+  <!-- Screen-reader data table -->
+  <table class="sr-only">
+    <caption>{ariaLabel}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Player</th>
+        {weeks.map((week) => <th scope="col">{week.label}</th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {
+        series.map((s) => (
+          <tr>
+            <th scope="row">{s.label}</th>
+            {s.values.map((v) => (
+              <td>{v}</td>
+            ))}
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</figure>

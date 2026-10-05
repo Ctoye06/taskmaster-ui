@@ -221,6 +221,41 @@ export interface CompetitionStats {
   differentWinners: number;
 }
 
+/** Accent token used to colour a chart series or achievement badge. */
+export type ChartAccent = "acid" | "magenta" | "cyan" | "amber" | "ink-dim";
+
+/** One line on a points chart: a label plus a cumulative value per week. */
+export interface ChartSeries {
+  id: string;
+  label: string;
+  accent: ChartAccent;
+  /** Cumulative points, one entry per week on the shared x-axis. */
+  values: number[];
+  /** Final cumulative total, for the legend. */
+  total: number;
+}
+
+/** A points-over-time chart: shared week axis plus one or more series. */
+export interface PointsChartData {
+  /** Shared x-axis, one entry per scored week (ascending). */
+  weeks: { weekNumber: number; label: string }[];
+  series: ChartSeries[];
+  /** Largest cumulative value across all series, for y-axis scaling. */
+  maxValue: number;
+}
+
+/** A single earned badge shown on a player profile. */
+export interface Achievement {
+  id: string;
+  /** Badge name, e.g. "Serial Winner". */
+  label: string;
+  /** Short supporting detail, e.g. "Won 2 tasks". */
+  detail: string;
+  /** Decorative glyph (rendered aria-hidden). */
+  icon: string;
+  accent: Exclude<ChartAccent, "ink-dim">;
+}
+
 /** A single Hall of Fame / superlative award for the stats page. */
 export interface Award {
   id: string;

@@ -17,8 +17,48 @@ const medal =
     "inline-flex items-center gap-1.5 rounded border border-grid bg-term-panel-2 px-2.5 py-1 text-sm font-bold tabular-nums",
     className,
   ]}
+  data-score-egg
 >
   {medal && <span aria-hidden="true">{medal}</span>}
   <span class="text-acid">{points}</span>
   <span class="text-ink-faint text-xs font-medium">pts</span>
 </span>
+
+<script>
+  // Easter egg: rapidly tapping a score badge flashes a cheeky "+1?" — but
+  // the Taskmaster awards no bonus points. Clicks are only counted (never
+  // preventDefault'd) so badges nested inside links still navigate normally.
+  const THRESHOLD = 5;
+  const WINDOW_MS = 1500;
+
+  document
+    .querySelectorAll<HTMLElement>("[data-score-egg]")
+    .forEach((badge) => {
+      let count = 0;
+      let timer: number | undefined;
+
+      badge.addEventListener("click", () => {
+        count++;
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => (count = 0), WINDOW_MS);
+        if (count < THRESHOLD) return;
+        count = 0;
+
+        badge.style.position = "relative";
+        badge.classList.remove("score-egg-pop");
+        void badge.offsetWidth; // restart the animation
+        badge.classList.add("score-egg-pop");
+
+        const floater = document.createElement("span");
+        floater.className = "score-floater";
+        floater.setAttribute("aria-hidden", "true");
+        floater.textContent = "+1?";
+        badge.appendChild(floater);
+        window.setTimeout(() => floater.remove(), 900);
+
+        (
+          window as unknown as { __eggToast?: (m: string, t?: string) => void }
+        ).__eggToast?.("nice try — no bonus points here", "magenta");
+      });
+    });
+</script>

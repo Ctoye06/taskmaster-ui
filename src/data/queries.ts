@@ -1,5 +1,7 @@
 import type {
+  Achievement,
   Award,
+  ChartSeries,
   CommandPaletteItem,
   CompareOpponent,
   CompetitionStats,
@@ -9,6 +11,7 @@ import type {
   PlayerCompareOptions,
   PlayerComparison,
   PlayerTaskResult,
+  PointsChartData,
   Score,
   TaskResult,
   TaskResultRow,
@@ -308,6 +311,232 @@ export function getPlayerInitials(player: Player): string {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+// Tasks that have at least one recorded score, ascending by week number.
+// This is the shared x-axis for every points-over-time chart.
+function getScoredTasks(): Task[] {
+  const scoredIds = new Set(scores.map((s) => s.taskId));
+  return [...tasks]
+    .filter((t) => scoredIds.has(t.id))
+    .sort((a, b) => a.weekNumber - b.weekNumber);
+}
+
+const CHART_SERIES_ACCENTS = [
+  "acid",
+  "magenta",
+  "cyan",
+  "amber",
+  "ink-dim",
+] as const;
+
+const weekAxisLabel = (weekNumber: number) =>
+  `W${String(weekNumber).padStart(2, "0")}`;
+
+// A player's running points total across every scored week (weeks they
+// weren't scored on carry the previous total forward).
+function cumulativeFor(playerId: string, scoredTasks: Task[]): number[] {
+  const pointsByTask = new Map(
+    scores
+      .filter((s) => s.playerId === playerId)
+      .map((s) => [s.taskId, s.points] as const),
+  );
+  let running = 0;
+  return scoredTasks.map((t) => {
+    running += pointsByTask.get(t.id) ?? 0;
+    return running;
+  });
+}
+
+/**
+ * A single player's cumulative points trajectory, for the chart on their
+ * profile. Undefined when there are fewer than two scored weeks (nothing to
+ * plot a line between yet).
+ */
+export function getPlayerProgressionChart(
+  playerId: string,
+): PointsChartData | undefined {
+  const scoredTasks = getScoredTasks();
+  if (scoredTasks.length < 2) return undefined;
+  const player = getPlayerById(playerId);
+  if (!player) return undefined;
+
+  const values = cumulativeFor(playerId, scoredTasks);
+  const total = values[values.length - 1] ?? 0;
+
+  return {
+    weeks: scoredTasks.map((t) => ({
+      weekNumber: t.weekNumber,
+      label: weekAxisLabel(t.weekNumber),
+    })),
+    series: [
+      { id: player.id, label: player.name, accent: "acid", values, total },
+    ],
+    maxValue: Math.max(1, total),
+  };
+}
+
+/**
+ * The "points race": cumulative points for the top N players across every
+ * scored week, for the leaderboard chart. Undefined until two weeks exist.
+ */
+export function getPointsRaceChart(limit = 5): PointsChartData | undefined {
+  const scoredTasks = getScoredTasks();
+  if (scoredTasks.length < 2) return undefined;
+
+  const top = getLeaderboard()
+    .slice(0, limit)
+    .filter((row) => row.tasksCompleted > 0);
+  if (top.length === 0) return undefined;
+
+  const series: ChartSeries[] = top.map((row, index) => {
+    const values = cumulativeFor(row.player.id, scoredTasks);
+    return {
+      id: row.player.id,
+      label: row.player.name,
+      accent: CHART_SERIES_ACCENTS[index % CHART_SERIES_ACCENTS.length],
+      values,
+      total: values[values.length - 1] ?? 0,
+    };
+  });
+
+  return {
+    weeks: scoredTasks.map((t) => ({
+      weekNumber: t.weekNumber,
+      label: weekAxisLabel(t.weekNumber),
+    })),
+    series,
+    maxValue: Math.max(1, ...series.map((s) => s.total)),
+  };
+}
+
+/**
+ * Playful per-player badges (streaks, wins, consistency) for the profile
+ * page. Derived entirely from the player's results and current standing;
+ * empty for a player who has not been scored yet.
+ */
+export function getPlayerAchievements(playerId: string): Achievement[] {
+  const standing = getLeaderboardWithMovement().find(
+    (row) => row.player.id === playerId,
+  );
+  if (!standing || standing.tasksCompleted === 0) return [];
+
+  const positions = getPlayerResults(playerId).map((r) => r.position);
+  const longestRun = (pred: (position: number) => boolean) => {
+    let best = 0;
+    let current = 0;
+    for (const position of positions) {
+      current = pred(position) ? current + 1 : 0;
+      if (current > best) best = current;
+    }
+    return best;
+  };
+
+  const wins = positions.filter((p) => p === 1).length;
+  const podiums = positions.filter((p) => p <= 3).length;
+  const achievements: Achievement[] = [];
+
+  if (standing.rank === 1) {
+    achievements.push({
+      id: "leader",
+      label: "Top of the Table",
+      detail: "Currently #1",
+      icon: "👑",
+      accent: "amber",
+    });
+  }
+
+  if (wins >= 2) {
+    achievements.push({
+      id: "serial-winner",
+      label: "Serial Winner",
+      detail: `Won ${wins} tasks`,
+      icon: "🏆",
+      accent: "acid",
+    });
+  } else if (wins === 1) {
+    achievements.push({
+      id: "winner",
+      label: "Task Winner",
+      detail: "Won a task",
+      icon: "🥇",
+      accent: "acid",
+    });
+  }
+
+  const winStreak = longestRun((p) => p === 1);
+  if (winStreak >= 2) {
+    achievements.push({
+      id: "win-streak",
+      label: "On Fire",
+      detail: `${winStreak} wins in a row`,
+      icon: "🔥",
+      accent: "magenta",
+    });
+  }
+
+  const podiumStreak = longestRun((p) => p <= 3);
+  if (podiumStreak >= 3) {
+    achievements.push({
+      id: "podium-streak",
+      label: "Podium Regular",
+      detail: `${podiumStreak} podiums in a row`,
+      icon: "🎖️",
+      accent: "cyan",
+    });
+  } else if (podiums >= 1) {
+    achievements.push({
+      id: "podium",
+      label: "Podium Finish",
+      detail: `${podiums} top-3 ${podiums === 1 ? "finish" : "finishes"}`,
+      icon: "🥉",
+      accent: "cyan",
+    });
+  }
+
+  if (standing.tasksCompleted >= 2 && standing.averagePosition <= 3) {
+    achievements.push({
+      id: "consistent",
+      label: "Ever Reliable",
+      detail: `${standing.averagePosition.toFixed(1)} average finish`,
+      icon: "🎯",
+      accent: "magenta",
+    });
+  }
+
+  const completedCount = tasks.filter((t) => t.status === "completed").length;
+  if (completedCount > 0 && standing.tasksCompleted >= completedCount) {
+    achievements.push({
+      id: "ever-present",
+      label: "Ever Present",
+      detail: "Scored in every task",
+      icon: "📅",
+      accent: "acid",
+    });
+  }
+
+  if (typeof standing.movement === "number" && standing.movement > 0) {
+    achievements.push({
+      id: "climber",
+      label: "Climbing",
+      detail: `+${standing.movement} places last task`,
+      icon: "📈",
+      accent: "amber",
+    });
+  }
+
+  const topScore = [...scores].sort((a, b) => b.points - a.points)[0];
+  if (topScore && topScore.playerId === playerId) {
+    achievements.push({
+      id: "high-score",
+      label: "High Scorer",
+      detail: `${topScore.points} pts in a single task`,
+      icon: "⚡",
+      accent: "magenta",
+    });
+  }
+
+  return achievements;
 }
 
 /**

@@ -1,0 +1,63 @@
+---
+import { withBase } from "../lib/url";
+
+interface Props {
+  /** Root-relative fallback path, e.g. `/tasks`. Used when there's no
+   *  in-app history to go back to (deep links, new tabs, no JS). */
+  href: string;
+  /** Visible label, rendered after the back arrow. */
+  label: string;
+  class?: string;
+}
+
+const { href, label, class: className = "" } = Astro.props;
+
+const base =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
+---
+
+<a href={withBase(href)} class:list={[base, className]} data-back-link>
+  <span aria-hidden="true">&larr;</span>{label}
+</a>
+
+<script>
+  // Progressive enhancement: with many interconnected screens a fixed parent
+  // link is often the "wrong" back. When the user actually arrived from
+  // somewhere else on this site, prefer the browser's real history so back
+  // returns them to where they came from. Otherwise (deep link, fresh tab,
+  // external referrer, no JS) the plain href fallback still works.
+  document.querySelectorAll<HTMLAnchorElement>("[data-back-link]").forEach(
+    (link) => {
+      link.addEventListener("click", (event) => {
+        // Let modified clicks (new tab/window, download) behave normally.
+        if (
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+
+        // Only hijack when there's real same-origin history to return to.
+        if (window.history.length <= 1) return;
+
+        const referrer = document.referrer;
+        if (!referrer) return;
+
+        let sameOrigin = false;
+        try {
+          sameOrigin = new URL(referrer).origin === window.location.origin;
+        } catch {
+          sameOrigin = false;
+        }
+        if (!sameOrigin) return;
+
+        event.preventDefault();
+        window.history.back();
+      });
+    },
+  );
+</script>

@@ -2,7 +2,7 @@
 import type { GetStaticPaths } from "astro";
 import Layout from "../../../layouts/Layout.astro";
 import ComparisonView from "../../../components/ComparisonView.astro";
-import { withBase } from "../../../lib/url";
+import BackLink from "../../../components/BackLink.astro";
 import { players } from "../../../data/players";
 import { getPlayerComparison } from "../../../data/queries";
 
@@ -23,16 +23,14 @@ const comparison = getPlayerComparison(a!, b!);
 if (!comparison) {
   return Astro.redirect("/404");
 }
-
-const btnGhost =
-  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
 ---
 
 <Layout
-  title={`${comparison.a.player.name} vs ${comparison.b.player.name} // EAYL Taskmaster`}
+  title={`${comparison.a.player.name} vs ${comparison.b.player.name}`}
+  description={`Head to head: ${comparison.a.player.name} (#${comparison.a.rank}) vs ${comparison.b.player.name} (#${comparison.b.rank}) in the EAYL Taskmaster.`}
 >
   <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-    <a href={withBase("/leaderboard")} class={btnGhost}>&larr; LEADERBOARD</a>
+    <BackLink href="/leaderboard" label="LEADERBOARD" />
 
     <header class="mt-6 mb-8">
       <p

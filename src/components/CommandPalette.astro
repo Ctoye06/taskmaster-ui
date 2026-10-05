@@ -140,6 +140,264 @@ const { items, class: className = "" } = Astro.props;
     let activeIndex = 0;
     let lastFocused: HTMLElement | null = null;
 
+    // ── Easter egg: a tiny fake shell ──────────────────────────────────────
+    // Typing a shell-style command prints a cheeky response instead of search
+    // results. Pure fun for anyone who treats the prompt like a real terminal.
+    interface Secret {
+      /** What to echo back on the `$` line (the user's own input). */
+      echo: string;
+      /** Response lines. A leading "> " renders a cyan marker, "! " a red one. */
+      lines: string[];
+      /** Optional action bound to Enter (e.g. exit closes the palette). */
+      onEnter?: () => void;
+    }
+
+    let currentSecret: Secret | null = null;
+
+    function resolveSecret(raw: string): Secret | null {
+      const q = raw.toLowerCase();
+      if (!q) return null;
+
+      if (q === "echo" || q.startsWith("echo ")) {
+        return { echo: raw, lines: [raw.slice(4).trim()] };
+      }
+
+      if (q === "sudo" || q.startsWith("sudo ")) {
+        const rest = q.slice(4).trim();
+        if (rest === "make me a sandwich") {
+          return { echo: raw, lines: ["Okay."] };
+        }
+        if (rest.startsWith("make me a")) {
+          return { echo: raw, lines: ["What? Make it yourself."] };
+        }
+        return {
+          echo: raw,
+          lines: [
+            "[sudo] password for guest: ",
+            "",
+            "! Nice try. This incident has been reported to the Taskmaster.",
+          ],
+        };
+      }
+
+      if (q.startsWith("rm ")) {
+        return {
+          echo: raw,
+          lines: [
+            "rm: removing the entire leaderboard...",
+            "! permission denied — the Taskmaster is watching.",
+          ],
+        };
+      }
+
+      if (q.startsWith("cat ")) {
+        const file = q.slice(4).trim();
+        if (file.includes("secret") || file.includes("do_not_open")) {
+          return {
+            echo: raw,
+            lines: [
+              "> It was never about the points.",
+              "> It was about the friends we scored along the way.",
+            ],
+          };
+        }
+        return {
+          echo: raw,
+          lines: [`cat: ${file}: No such file or directory`],
+        };
+      }
+
+      switch (q) {
+        case "help":
+        case "?":
+          return {
+            echo: raw,
+            lines: [
+              "available commands:",
+              "  whoami   ls        date      coffee",
+              "  echo …   sudo …    cat …     fortune",
+              "  uptime   credits   konami    clear",
+              "  greg     42        hello     exit",
+              "",
+              "> everything else just searches. happy hunting.",
+            ],
+          };
+        case "whoami":
+          return { echo: raw, lines: ["guest — ranked: unranked (for now)"] };
+        case "ls":
+        case "ls -la":
+        case "dir":
+          return {
+            echo: raw,
+            lines: [
+              "drwxr-xr-x   tasks/",
+              "drwxr-xr-x   players/",
+              "drwxr-xr-x   leaderboard/",
+              "-rw-------   secret_plans.txt",
+              "-rw-r--r--   do_not_open.md",
+            ],
+          };
+        case "date":
+          return { echo: raw, lines: ["> " + new Date().toString()] };
+        case "coffee":
+        case "make coffee":
+          return {
+            echo: raw,
+            lines: [
+              "      ( (",
+              "       ) )",
+              "    ........",
+              "    |      |]",
+              "    \\      /",
+              "     `----'",
+              "brewing… productivity +10",
+            ],
+          };
+        case "hello":
+        case "hi":
+        case "hey":
+          return {
+            echo: raw,
+            lines: ["> Hello there. Ready to climb the leaderboard?"],
+          };
+        case "greg":
+        case "taskmaster":
+          return {
+            echo: raw,
+            lines: ['> "Your time starts… now." — the Taskmaster'],
+          };
+        case "42":
+        case "the answer":
+          return {
+            echo: raw,
+            lines: ["> The answer to life, the universe, and everything."],
+          };
+        case "exit":
+        case "quit":
+        case ":q":
+          return {
+            echo: raw,
+            lines: ["logging out… (press ↵ to close)"],
+            onEnter: () => close(),
+          };
+        case ":wq":
+          return { echo: raw, lines: ["saved. (nothing was actually saved)"] };
+        case "vim":
+        case "vi":
+        case "nano":
+          return {
+            echo: raw,
+            lines: ["> you're already in the only editor that matters."],
+          };
+        case "clear":
+        case "cls":
+          return { echo: raw, lines: ["(nothing to see here… yet)"] };
+        case "konami":
+          return {
+            echo: raw,
+            lines: ["> ↑ ↑ ↓ ↓ ← → ← → B A", "> go on, try it."],
+          };
+        case "uptime":
+          return {
+            echo: raw,
+            lines: ["up 16 weeks · 25 players · load average: intense"],
+          };
+        case "credits":
+          return {
+            echo: raw,
+            lines: [
+              "EAYL TASKMASTER",
+              "> built by the Engineering Academy",
+              "> terminal easter eggs included at no extra charge",
+            ],
+          };
+        case "sl":
+          return {
+            echo: raw,
+            lines: [
+              "      ====        ________                ___________",
+              "  _D _|  |_______/        \\__I_I_____===__|_________|",
+              "   |(_)---  |   H\\________/ |   |        =|___ ___|  ",
+              "   /     |  |   H  |  |     |   |         ||_| |_||  ",
+              "  |      |  |   H  |__--------------------| [___] |  ",
+              "> (you typed 'ls' too fast.)",
+            ],
+          };
+        case "fortune": {
+          const fortunes = [
+            "> A task a day keeps the bottom of the table away.",
+            "> The points mean everything. — the Taskmaster",
+            "> Somewhere, a spreadsheet is judging you.",
+            "> Your next idea is better than your last excuse.",
+            "> Ship it. The deadline waits for no one.",
+          ];
+          return {
+            echo: raw,
+            lines: [fortunes[Math.floor(Math.random() * fortunes.length)]],
+          };
+        }
+        default:
+          return null;
+      }
+    }
+
+    function secretLine(text: string): HTMLDivElement {
+      const div = document.createElement("div");
+      div.className = "whitespace-pre-wrap break-words";
+      let marker = "";
+      let markerClass = "";
+      if (text.startsWith("> ")) {
+        marker = ">";
+        markerClass = "text-cyan";
+        text = text.slice(2);
+      } else if (text.startsWith("! ")) {
+        marker = "!";
+        markerClass = "text-danger";
+        text = text.slice(2);
+      }
+      if (marker) {
+        const m = document.createElement("span");
+        m.className = `mr-2 ${markerClass}`;
+        m.setAttribute("aria-hidden", "true");
+        m.textContent = marker;
+        div.appendChild(m);
+        div.appendChild(document.createTextNode(text));
+        div.classList.add("text-ink");
+      } else {
+        div.classList.add("text-ink-dim");
+        div.textContent = text;
+      }
+      return div;
+    }
+
+    function renderSecret(secret: Secret) {
+      list!.innerHTML = "";
+      options = [];
+      empty?.classList.add("hidden");
+      input?.setAttribute("aria-activedescendant", "");
+
+      const li = document.createElement("li");
+      li.setAttribute("role", "presentation");
+      li.className = "px-4 py-4 text-sm leading-relaxed";
+
+      const echo = document.createElement("div");
+      echo.className = "mb-2 flex gap-2";
+      const dollar = document.createElement("span");
+      dollar.className = "text-acid";
+      dollar.setAttribute("aria-hidden", "true");
+      dollar.textContent = "$";
+      const cmd = document.createElement("span");
+      cmd.className = "break-words text-ink";
+      cmd.textContent = secret.echo;
+      echo.appendChild(dollar);
+      echo.appendChild(cmd);
+      li.appendChild(echo);
+
+      for (const line of secret.lines) li.appendChild(secretLine(line));
+
+      list!.appendChild(li);
+    }
+
     // Subsequence fuzzy match: every query char must appear in order. Returns
     // a score (lower = better) or null when there is no match.
     function score(item: PaletteItem, query: string): number | null {
@@ -175,6 +433,12 @@ const { items, class: className = "" } = Astro.props;
     }
 
     function render(query: string) {
+      currentSecret = resolveSecret(query);
+      if (currentSecret) {
+        renderSecret(currentSecret);
+        return;
+      }
+
       list!.innerHTML = "";
       options = [];
 
@@ -281,7 +545,11 @@ const { items, class: className = "" } = Astro.props;
           break;
         case "Enter":
           e.preventDefault();
-          if (options[activeIndex]) go(options[activeIndex]);
+          if (currentSecret?.onEnter) {
+            currentSecret.onEnter();
+          } else if (options[activeIndex]) {
+            go(options[activeIndex]);
+          }
           break;
       }
     });

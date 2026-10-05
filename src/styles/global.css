@@ -302,3 +302,159 @@ a[data-me-row].is-me {
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Easter eggs                                                        */
+/*  Hidden treats wired up by EasterEggs.astro and a few component     */
+/*  scripts. All motion below is disabled by the reduced-motion block  */
+/*  above (the `*` safety net), and the screensaver is not started at  */
+/*  all when reduced motion is requested.                              */
+/* ------------------------------------------------------------------ */
+
+/* Konami "turbo CRT" mode: brighter green glow + denser, drifting
+   scanlines. Toggled via [data-turbo] on <html>. */
+:root[data-turbo] {
+  --color-scanline: rgba(62, 240, 139, 0.05);
+}
+:root[data-turbo] body {
+  background-image:
+    radial-gradient(
+      ellipse at 50% -10%,
+      rgba(62, 240, 139, 0.16),
+      transparent 55%
+    ),
+    linear-gradient(var(--color-grid-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid-soft) 1px, transparent 1px);
+}
+:root[data-turbo] body::before {
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--color-scanline) 0px,
+    var(--color-scanline) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  animation: turbo-scan 6s linear infinite;
+}
+:root[data-turbo] .text-glow {
+  text-shadow:
+    0 0 6px rgba(62, 240, 139, 0.65),
+    0 0 18px rgba(62, 240, 139, 0.55);
+}
+:root[data-turbo] .text-acid {
+  text-shadow: 0 0 10px rgba(62, 240, 139, 0.4);
+}
+@keyframes turbo-scan {
+  from {
+    background-position-y: 0;
+  }
+  to {
+    background-position-y: 120px;
+  }
+}
+
+/* Idle "egg rain" screensaver overlay, injected by EasterEggs.astro. */
+#egg-screensaver {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-term-bg) 88%, transparent);
+  backdrop-filter: blur(2px);
+}
+#egg-screensaver .egg-drop {
+  position: absolute;
+  top: 0;
+  width: var(--egg-size, 36px);
+  height: var(--egg-size, 36px);
+  opacity: 0.9;
+  image-rendering: pixelated;
+  will-change: transform;
+  animation: egg-fall var(--egg-dur, 7s) linear var(--egg-delay, 0s) infinite;
+}
+#egg-screensaver .egg-hint {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 2.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  color: var(--color-ink-faint);
+}
+@keyframes egg-fall {
+  from {
+    transform: translateY(-20vh) rotate(0deg);
+  }
+  to {
+    transform: translateY(120vh) rotate(var(--egg-spin, 180deg));
+  }
+}
+
+/* Score-badge rapid-click: a shake plus a floating "+1?" that drifts up. */
+.score-egg-pop {
+  animation: score-shake 0.5s ease-in-out;
+}
+.score-floater {
+  position: absolute;
+  left: 50%;
+  top: -0.25rem;
+  transform: translate(-50%, 0);
+  pointer-events: none;
+  font-weight: 700;
+  color: var(--color-magenta);
+  animation: score-float 0.9s ease-out forwards;
+}
+@keyframes score-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  20% {
+    transform: translateX(-2px) rotate(-3deg);
+  }
+  40% {
+    transform: translateX(2px) rotate(3deg);
+  }
+  60% {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  80% {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+@keyframes score-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -22px);
+  }
+}
+
+/* Countdown reaching zero live: a brief glitch shudder. */
+.cd-zero-glitch {
+  animation: cd-glitch 0.4s steps(2) 3;
+}
+@keyframes cd-glitch {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-2px, 1px);
+  }
+  40% {
+    transform: translate(2px, -1px);
+  }
+  60% {
+    transform: translate(-1px, -1px);
+  }
+  80% {
+    transform: translate(1px, 1px);
+  }
+}

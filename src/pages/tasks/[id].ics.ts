@@ -1,0 +1,94 @@
+import type { APIRoute, GetStaticPaths } from "astro";
+import { tasks, getTaskById } from "../../data/tasks";
+import { withBase } from "../../lib/url";
+
+export const getStaticPaths = (() => {
+  return tasks.map((task) => ({ params: { id: task.id } }));
+}) satisfies GetStaticPaths;
+
+// Escape per RFC 5545 text rules (backslash, comma, semicolon, newlines).
+const escapeICS = (value: string) =>
+  value
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+
+// "2026-10-09T15:00:00" → "20261009T150000" (floating local time).
+const toICSLocal = (iso: string) => iso.replace(/[-:]/g, "").slice(0, 15);
+
+const toICSStamp = (date: Date) =>
+  date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
+
+// Fold lines to 75 octets per RFC 5545 (continuation lines start with a
+// space). Keeps strict calendar parsers happy on long DESCRIPTION values.
+const foldLine = (line: string) => {
+  if (line.length <= 73) return line;
+  const chunks: string[] = [];
+  let rest = line;
+  chunks.push(rest.slice(0, 73));
+  rest = rest.slice(73);
+  while (rest.length > 72) {
+    chunks.push(" " + rest.slice(0, 72));
+    rest = rest.slice(72);
+  }
+  if (rest.length > 0) chunks.push(" " + rest);
+  return chunks.join("\r\n");
+};
+
+export const GET: APIRoute = ({ params, site }) => {
+  const task = getTaskById(params.id!);
+  if (!task) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const weekLabel = `Week ${String(task.weekNumber).padStart(2, "0")}`;
+  const named = task.title.length > 0 && task.title !== "???";
+  const summary = named
+    ? `EAYL Taskmaster — ${weekLabel} deadline: ${task.title}`
+    : `EAYL Taskmaster — ${weekLabel} deadline`;
+
+  const taskUrl = site
+    ? new URL(withBase(`/tasks/${task.id}`), site).href
+    : withBase(`/tasks/${task.id}`);
+
+  const description = [task.brief || task.description, taskUrl]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//EAYL Taskmaster//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${task.id}-deadline@eayl-taskmaster`,
+    `DTSTAMP:${toICSStamp(new Date())}`,
+    `DTSTART:${toICSLocal(task.deadline)}`,
+    `DURATION:PT30M`,
+    `SUMMARY:${escapeICS(summary)}`,
+    `DESCRIPTION:${escapeICS(description)}`,
+    `URL:${taskUrl}`,
+    "BEGIN:VALARM",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${escapeICS(summary)}`,
+    "TRIGGER:-P1D",
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+
+  // RFC 5545 requires CRLF line endings and folded long lines.
+  const body = lines.map(foldLine).join("\r\n") + "\r\n";
+
+  return new Response(body, {
+    headers: {
+      "Content-Type": "text/calendar; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${task.id}-deadline.ics"`,
+    },
+  });
+};

@@ -17,6 +17,8 @@ window chrome — and is built static-first with **Astro + TypeScript + Tailwind
 - TypeScript
 - Tailwind CSS v4 (via `@tailwindcss/vite`), with design tokens in
   [`src/styles/global.css`](src/styles/global.css)
+- [`@astrojs/sitemap`](https://docs.astro.build/en/guides/integrations-guide/sitemap/)
+  for an auto-generated sitemap (+ `public/robots.txt`)
 - Prettier (with `prettier-plugin-astro`)
 
 ## 📁 Project structure

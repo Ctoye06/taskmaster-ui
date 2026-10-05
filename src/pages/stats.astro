@@ -12,7 +12,10 @@ const btnPrimary =
   "inline-flex items-center justify-center gap-2 rounded-md border border-acid bg-acid/10 px-5 py-2.5 text-sm font-bold tracking-widest text-acid transition-colors hover:bg-acid hover:text-term-bg focus-visible:outline-none";
 ---
 
-<Layout title="EAYL Taskmaster">
+<Layout
+  title="Stats"
+  description="Competition stats and the EAYL Taskmaster Hall of Fame awards."
+>
   <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
     <!-- Header -->
     <header class="mb-10">
@@ -26,9 +29,11 @@ const btnPrimary =
       >
         Stats&nbsp;&amp;&nbsp;Awards
       </h1>
-      <p class="mt-3 max-w-xl text-sm text-ink-dim">
-        The numbers behind the chaos. Records, superlatives, and the odd
-        bragging right — handed out by the Taskmaster's spreadsheet.
+      <p
+        class="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base"
+      >
+        <span class="text-acid">//</span> The numbers behind the chaos. Records, superlatives,
+        and the odd bragging right — handed out by the Taskmaster's spreadsheet.
       </p>
     </header>
 
