@@ -168,10 +168,10 @@ SHELL WE SURVIVE?
 Keep your egg alive for the entire week.
 
 Released:
-Friday 3:00 PM
+Friday 15:00
 
 Deadline:
-Friday 3:00 PM
+Friday 15:00
 
 [ VIEW TASK ]
 

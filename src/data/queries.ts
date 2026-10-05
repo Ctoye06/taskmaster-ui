@@ -66,7 +66,18 @@ function computeStandings(scoreSet: Score[]): LeaderboardRow[] {
     return a.averagePosition - b.averagePosition;
   });
 
-  return rows.map((row, index) => ({ rank: index + 1, ...row }));
+  // Standard competition ranking: players level on points share a rank
+  // (e.g. two on the same points are both 3rd), and the next player's rank
+  // skips accordingly (…3, 3, 5). Order within a tie still follows the
+  // wins / average-position sort above.
+  let previousPoints: number | null = null;
+  let sharedRank = 0;
+  return rows.map((row, index) => {
+    const rank = row.points === previousPoints ? sharedRank : index + 1;
+    previousPoints = row.points;
+    sharedRank = rank;
+    return { rank, ...row };
+  });
 }
 
 /**

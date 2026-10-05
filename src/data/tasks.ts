@@ -30,9 +30,9 @@ export const tasks: Task[] = [
     id: "week-03",
     weekNumber: 3,
     title: "Assassin",
-    description: "Hide an everyday object, then write directions to find it.",
+    description: "Complete your secret mission. Stay alive.",
     brief:
-      "Hide an everyday object somewhere in the building. Then write the most beautiful set of directions to find it. Points for elegance. Penalties for segfaults.",
+      "Complete your secret mission and eliminate your target. Once successful, discreetly tell your target and the Taskmaster. Your eliminated target must then hand their mission to you. If eliminated, you may assist others but never reveal that you have been eliminated. Be cunning. Be devious. Trust no one.",
     releaseDate: "2026-10-02T15:00:00",
     deadline: "2026-10-09T15:00:00",
     status: "live",
