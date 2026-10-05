@@ -1,6 +1,7 @@
 ---
 import type { LeaderboardRow } from "../types";
 import { getPlayerInitials } from "../data/queries";
+import { withBase } from "../lib/url";
 
 interface Props {
   rows: LeaderboardRow[];
@@ -26,7 +27,7 @@ const accent = (rank: number) => {
     rows.map((row) => (
       <li>
         <a
-          href={`/players/${row.player.id}`}
+          href={withBase(`/players/${row.player.id}`)}
           class:list={[
             "group flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors hover:border-ink-faint sm:gap-4 sm:px-4",
             accent(row.rank),

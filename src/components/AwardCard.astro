@@ -1,6 +1,7 @@
 ---
 import type { Award } from "../types";
 import { getPlayerInitials } from "../data/queries";
+import { withBase } from "../lib/url";
 
 interface Props {
   award: Award;
@@ -55,7 +56,7 @@ const accentBorder: Record<Award["accent"], string> = {
   {
     award.player ? (
       <a
-        href={`/players/${award.player.id}`}
+        href={withBase(`/players/${award.player.id}`)}
         class="group mt-3 flex items-center gap-2.5"
       >
         <span

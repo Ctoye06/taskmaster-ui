@@ -2,6 +2,7 @@
 import type { TaskSummary } from "../types";
 import TaskStatusBadge from "./TaskStatusBadge.astro";
 import ScoreBadge from "./ScoreBadge.astro";
+import { withBase } from "../lib/url";
 
 interface Props {
   summary: TaskSummary;
@@ -102,7 +103,7 @@ const releaseLabel = dayFmt.format(new Date(task.releaseDate));
         )}
 
         <a
-          href={`/tasks/${task.id}`}
+          href={withBase(`/tasks/${task.id}`)}
           class:list={[
             "mt-5 inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-xs font-bold tracking-widest transition-colors",
             status === "live"

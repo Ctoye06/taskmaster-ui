@@ -4,6 +4,7 @@ import Layout from "../../layouts/Layout.astro";
 import TerminalWindow from "../../components/TerminalWindow.astro";
 import StatCard from "../../components/StatCard.astro";
 import ComparePicker from "../../components/ComparePicker.astro";
+import { withBase } from "../../lib/url";
 import { players } from "../../data/players";
 import {
   getPlayerStanding,
@@ -57,7 +58,7 @@ const btnGhost =
 <Layout title={`${player.name} // EAYL TASKMASTER`}>
   <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
     <!-- Back link -->
-    <a href="/players" class={btnGhost}>&larr; ALL PLAYERS</a>
+    <a href={withBase("/players")} class={btnGhost}>&larr; ALL PLAYERS</a>
 
     <!-- Header -->
     <header class="mt-6">
@@ -201,7 +202,7 @@ const btnGhost =
                       </td>
                       <td class="px-3 py-3">
                         <a
-                          href={`/tasks/${result.task.id}`}
+                          href={withBase(`/tasks/${result.task.id}`)}
                           class="font-semibold text-ink group-hover:text-acid"
                         >
                           {result.task.title}
@@ -254,7 +255,7 @@ const btnGhost =
       <p class="mt-4 text-[11px] text-ink-faint">
         <span class="text-acid">//</span> Points awarded by finishing position — 10
         for a win, down to 1. See the
-        <a href="/leaderboard" class="text-cyan hover:text-ink">
+        <a href={withBase("/leaderboard")} class="text-cyan hover:text-ink">
           full leaderboard
         </a>
         for live standings.

@@ -5,6 +5,7 @@ import Footer from "../components/Footer.astro";
 import CommandPalette from "../components/CommandPalette.astro";
 import WhatsNewBanner from "../components/WhatsNewBanner.astro";
 import { getCommandPaletteItems, getWhatsNew } from "../data/queries";
+import { withBase } from "../lib/url";
 
 interface Props {
   title?: string;
@@ -25,8 +26,8 @@ const whatsNew = getWhatsNew();
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href={withBase("/favicon.svg")} />
+    <link rel="icon" href={withBase("/favicon.ico")} />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#080b10" />

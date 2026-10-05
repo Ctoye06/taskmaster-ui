@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from "astro";
 import Layout from "../../layouts/Layout.astro";
+import { withBase } from "../../lib/url";
 import TerminalWindow from "../../components/TerminalWindow.astro";
 import TaskStatusBadge from "../../components/TaskStatusBadge.astro";
 import Countdown from "../../components/Countdown.astro";
@@ -67,7 +68,7 @@ const btnGhost =
 <Layout title={`${weekLabel}: ${task.title} // EAYL TASKMASTER`}>
   <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
     <!-- Back link -->
-    <a href="/tasks" class={btnGhost}>&larr; ALL TASKS</a>
+    <a href={withBase("/tasks")} class={btnGhost}>&larr; ALL TASKS</a>
 
     <!-- Header -->
     <header class="mt-6">
@@ -204,7 +205,7 @@ const btnGhost =
               🥇
             </p>
             <a
-              href={`/players/${winner.id}`}
+              href={withBase(`/players/${winner.id}`)}
               class="mt-1 inline-block text-3xl font-extrabold text-ink text-glow hover:text-acid"
             >
               {winner.name}
@@ -249,7 +250,7 @@ const btnGhost =
                     </td>
                     <td class="px-4 py-3">
                       <a
-                        href={`/players/${row.player.id}`}
+                        href={withBase(`/players/${row.player.id}`)}
                         class="group inline-flex items-center gap-3"
                       >
                         <span

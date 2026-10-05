@@ -3,6 +3,7 @@ import type { Player, PlayerComparison } from "../types";
 import { getPlayerInitials } from "../data/queries";
 import TerminalWindow from "./TerminalWindow.astro";
 import ComparisonStatRow from "./ComparisonStatRow.astro";
+import { withBase } from "../lib/url";
 
 interface Props {
   comparison: PlayerComparison;
@@ -182,7 +183,7 @@ const cellResult = (result?: { position: number; points: number }) => result;
   class="mt-6 grid grid-cols-[1fr_auto_1fr] items-stretch gap-3 sm:gap-4"
 >
   <a
-    href={`/players/${a.player.id}`}
+    href={withBase(`/players/${a.player.id}`)}
     class:list={[
       "group flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors hover:border-ink-faint sm:p-5",
       headerRing("a"),
@@ -227,7 +228,7 @@ const cellResult = (result?: { position: number; points: number }) => result;
   </div>
 
   <a
-    href={`/players/${b.player.id}`}
+    href={withBase(`/players/${b.player.id}`)}
     class:list={[
       "group flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors hover:border-ink-faint sm:p-5",
       headerRing("b"),
@@ -321,7 +322,7 @@ const cellResult = (result?: { position: number; points: number }) => result;
                   <tr class="group border-b border-grid-soft transition-colors last:border-b-0 hover:bg-term-panel-2/60">
                     <td class="px-3 py-3">
                       <a
-                        href={`/tasks/${row.task.id}`}
+                        href={withBase(`/tasks/${row.task.id}`)}
                         class="block font-semibold text-ink group-hover:text-acid"
                       >
                         {row.task.title}

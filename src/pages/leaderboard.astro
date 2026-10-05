@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import TerminalWindow from "../components/TerminalWindow.astro";
 import StandingsTable from "../components/StandingsTable.astro";
 import StatCard from "../components/StatCard.astro";
+import { withBase } from "../lib/url";
 import {
   getLeaderboardWithMovement,
   getCompetitionStats,
@@ -85,7 +86,7 @@ const leader = first;
               return (
                 <li class:list={["flex", style.height]}>
                   <a
-                    href={`/players/${row.player.id}`}
+                    href={withBase(`/players/${row.player.id}`)}
                     class:list={[
                       "group flex w-full flex-col items-center gap-2 rounded-xl border px-2 py-4 text-center transition-colors hover:border-ink-faint sm:px-4",
                       style.ring,

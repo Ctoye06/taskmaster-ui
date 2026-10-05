@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { withBase } from "../lib/url";
 import TerminalWindow from "../components/TerminalWindow.astro";
 import TaskStatusBadge from "../components/TaskStatusBadge.astro";
 import Countdown from "../components/Countdown.astro";
@@ -97,7 +98,7 @@ const btnGhost =
 
       <div class="mt-7 flex flex-wrap gap-3">
         <a href="#current-task" class={btnPrimary}>&gt; VIEW CURRENT TASK</a>
-        <a href="/leaderboard" class={btnGhost}>LEADERBOARD</a>
+        <a href={withBase("/leaderboard")} class={btnGhost}>LEADERBOARD</a>
       </div>
     </section>
 
@@ -150,7 +151,7 @@ const btnGhost =
                 </dl>
 
                 <a
-                  href={`/tasks/${currentTask.id}`}
+                  href={withBase(`/tasks/${currentTask.id}`)}
                   class={`${btnPrimary} mt-6`}
                 >
                   [ VIEW TASK ]
@@ -184,7 +185,7 @@ const btnGhost =
             leaderboard --top 5
           </h2>
           <a
-            href="/leaderboard"
+            href={withBase("/leaderboard")}
             class="text-xs font-bold tracking-widest text-cyan hover:text-ink"
             >VIEW FULL &rarr;</a
           >
@@ -202,7 +203,7 @@ const btnGhost =
             results --recent
           </h2>
           <a
-            href="/tasks"
+            href={withBase("/tasks")}
             class="text-xs font-bold tracking-widest text-cyan hover:text-ink"
             >ALL TASKS &rarr;</a
           >
@@ -213,7 +214,7 @@ const btnGhost =
             recentResults.map((result) => (
               <li>
                 <a
-                  href={`/tasks/${result.task.id}`}
+                  href={withBase(`/tasks/${result.task.id}`)}
                   class="group flex items-center gap-3 rounded-lg border border-grid bg-term-panel px-3 py-3 transition-colors hover:border-ink-faint sm:gap-4 sm:px-4"
                 >
                   <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-xs font-extrabold text-ink-faint tabular-nums">

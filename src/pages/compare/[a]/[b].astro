@@ -2,6 +2,7 @@
 import type { GetStaticPaths } from "astro";
 import Layout from "../../../layouts/Layout.astro";
 import ComparisonView from "../../../components/ComparisonView.astro";
+import { withBase } from "../../../lib/url";
 import { players } from "../../../data/players";
 import { getPlayerComparison } from "../../../data/queries";
 
@@ -31,7 +32,7 @@ const btnGhost =
   title={`${comparison.a.player.name} vs ${comparison.b.player.name} // EAYL TASKMASTER`}
 >
   <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-    <a href="/leaderboard" class={btnGhost}>&larr; LEADERBOARD</a>
+    <a href={withBase("/leaderboard")} class={btnGhost}>&larr; LEADERBOARD</a>
 
     <header class="mt-6 mb-8">
       <p

@@ -1,5 +1,6 @@
 ---
 import type { CompareOpponent } from "../types";
+import { withBase } from "../lib/url";
 
 interface Props {
   /** The player whose profile this picker lives on. */
@@ -20,7 +21,7 @@ const {
   class: className = "",
 } = Astro.props;
 
-const compareBase = `/compare/${playerId}`;
+const compareBase = withBase(`/compare/${playerId}`);
 const selectId = `compare-with-${playerId}`;
 
 const btnPrimary =

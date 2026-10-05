@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import StatCard from "../components/StatCard.astro";
 import AwardCard from "../components/AwardCard.astro";
+import { withBase } from "../lib/url";
 import { getCompetitionStats, getAwards } from "../data/queries";
 
 const stats = getCompetitionStats();
@@ -100,9 +101,9 @@ const btnPrimary =
 
     <!-- CTA -->
     <section class="mt-14 flex flex-wrap items-center gap-3">
-      <a href="/leaderboard" class={btnPrimary}>VIEW LEADERBOARD</a>
+      <a href={withBase("/leaderboard")} class={btnPrimary}>VIEW LEADERBOARD</a>
       <a
-        href="/compare"
+        href={withBase("/compare")}
         class="inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink"
       >
         COMPARE PLAYERS

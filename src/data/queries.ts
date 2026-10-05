@@ -20,6 +20,7 @@ import type {
 import { players, getPlayerById } from "./players";
 import { tasks, getTaskById, getCurrentTask } from "./tasks";
 import { scores } from "./scores";
+import { withBase } from "../lib/url";
 
 // This module is the single "data layer" the UI talks to. Pages import these
 // derived selectors rather than raw records, so moving to Supabase later only
@@ -451,7 +452,7 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     id: "page-home",
     label: "Home",
     group: "page",
-    href: "/",
+    href: withBase("/"),
     hint: "current task & overview",
     keywords: "start index dashboard",
   },
@@ -459,7 +460,7 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     id: "page-tasks",
     label: "Tasks",
     group: "page",
-    href: "/tasks",
+    href: withBase("/tasks"),
     hint: "every weekly brief",
     keywords: "weeks briefs challenges",
   },
@@ -467,7 +468,7 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     id: "page-leaderboard",
     label: "Leaderboard",
     group: "page",
-    href: "/leaderboard",
+    href: withBase("/leaderboard"),
     hint: "full standings",
     keywords: "ranks table standings top",
   },
@@ -475,7 +476,7 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     id: "page-compare",
     label: "Compare",
     group: "page",
-    href: "/compare",
+    href: withBase("/compare"),
     hint: "head-to-head",
     keywords: "versus vs head to head",
   },
@@ -483,7 +484,7 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     id: "page-stats",
     label: "Stats",
     group: "page",
-    href: "/stats",
+    href: withBase("/stats"),
     hint: "hall of fame & awards",
     keywords: "summary superlatives records",
   },
@@ -491,7 +492,7 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     id: "page-players",
     label: "Players",
     group: "page",
-    href: "/players",
+    href: withBase("/players"),
     hint: "the roster",
     keywords: "competitors roster people",
   },
@@ -512,7 +513,7 @@ export function getCommandPaletteItems(): CommandPaletteItem[] {
         id: `task-${task.id}`,
         label: named ? task.title : weekLabel,
         group: "task" as const,
-        href: `/tasks/${task.id}`,
+        href: withBase(`/tasks/${task.id}`),
         hint: `${weekLabel} · ${task.status}`,
         keywords: `${weekLabel} ${task.status} ${task.description}`,
       };
@@ -528,7 +529,7 @@ export function getCommandPaletteItems(): CommandPaletteItem[] {
       id: `player-${player.id}`,
       label: player.name,
       group: "player" as const,
-      href: `/players/${player.id}`,
+      href: withBase(`/players/${player.id}`),
       hint: row ? `rank #${row.rank} · ${row.points} pts` : "unranked",
       keywords: player.team ?? "",
     };
@@ -553,7 +554,7 @@ export function getWhatsNew(): WhatsNewInfo | undefined {
     weekNumber: task.weekNumber,
     title: named ? task.title : weekLabel,
     status: task.status,
-    href: `/tasks/${task.id}`,
+    href: withBase(`/tasks/${task.id}`),
   };
 }
 
@@ -569,7 +570,7 @@ export function getTaskPager(taskId: string): TaskPager {
   const toLink = (task: Task): TaskPagerLink => {
     const named = task.title.length > 0 && task.title !== "???";
     return {
-      href: `/tasks/${task.id}`,
+      href: withBase(`/tasks/${task.id}`),
       weekNumber: task.weekNumber,
       title: named
         ? task.title

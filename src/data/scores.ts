@@ -122,7 +122,8 @@ function buildScores(): Score[] {
     let previousPoints: number | null = null;
     let sharedPosition = 0;
     ranked.forEach((entry, index) => {
-      const position = entry.points === previousPoints ? sharedPosition : index + 1;
+      const position =
+        entry.points === previousPoints ? sharedPosition : index + 1;
       previousPoints = entry.points;
       sharedPosition = position;
       result.push({

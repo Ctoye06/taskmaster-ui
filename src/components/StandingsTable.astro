@@ -1,6 +1,7 @@
 ---
 import type { LeaderboardRow } from "../types";
 import { getPlayerInitials } from "../data/queries";
+import { withBase } from "../lib/url";
 
 interface Props {
   rows: LeaderboardRow[];
@@ -111,7 +112,7 @@ const th =
 
             <td class="px-3 py-3">
               <a
-                href={`/players/${row.player.id}`}
+                href={withBase(`/players/${row.player.id}`)}
                 class="flex items-center gap-3"
               >
                 <span

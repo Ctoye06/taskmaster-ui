@@ -1,5 +1,7 @@
 ---
 // Site navigation styled as a terminal window title bar.
+import { withBase } from "../lib/url";
+
 const links = [
   { href: "/", label: "home" },
   { href: "/tasks", label: "tasks" },
@@ -10,8 +12,10 @@ const links = [
 ];
 
 const path = Astro.url.pathname;
-const isActive = (href: string) =>
-  href === "/" ? path === "/" : path.startsWith(href);
+const isActive = (href: string) => {
+  const full = withBase(href);
+  return href === "/" ? path === full : path.startsWith(full);
+};
 ---
 
 <header
@@ -22,7 +26,7 @@ const isActive = (href: string) =>
     aria-label="Primary"
   >
     <!-- Brand / terminal traffic lights -->
-    <a href="/" class="group flex items-center gap-3">
+    <a href={withBase("/")} class="group flex items-center gap-3">
       <span class="hidden items-center gap-1.5 sm:flex" aria-hidden="true">
         <span class="h-3 w-3 rounded-full bg-dot-red"></span>
         <span class="h-3 w-3 rounded-full bg-dot-amber"></span>
@@ -46,7 +50,7 @@ const isActive = (href: string) =>
         links.map((link) => (
           <li>
             <a
-              href={link.href}
+              href={withBase(link.href)}
               aria-current={isActive(link.href) ? "page" : undefined}
               class:list={[
                 "group inline-flex items-center rounded px-3 py-2 text-sm tracking-wide transition-colors",
@@ -124,7 +128,7 @@ const isActive = (href: string) =>
         links.map((link) => (
           <li>
             <a
-              href={link.href}
+              href={withBase(link.href)}
               aria-current={isActive(link.href) ? "page" : undefined}
               class:list={[
                 "flex items-center gap-2 border-b border-grid-soft py-3 text-sm tracking-wide last:border-b-0",
