@@ -26,8 +26,9 @@ const base =
   // somewhere else on this site, prefer the browser's real history so back
   // returns them to where they came from. Otherwise (deep link, fresh tab,
   // external referrer, no JS) the plain href fallback still works.
-  document.querySelectorAll<HTMLAnchorElement>("[data-back-link]").forEach(
-    (link) => {
+  document
+    .querySelectorAll<HTMLAnchorElement>("[data-back-link]")
+    .forEach((link) => {
       link.addEventListener("click", (event) => {
         // Let modified clicks (new tab/window, download) behave normally.
         if (
@@ -58,6 +59,5 @@ const base =
         event.preventDefault();
         window.history.back();
       });
-    },
-  );
+    });
 </script>

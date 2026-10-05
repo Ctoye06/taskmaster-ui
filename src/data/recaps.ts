@@ -17,8 +17,7 @@ export const weekRecaps: Record<string, WeekRecapContent> = {
     headline: "Rose keeps it together while the academy cracks up",
     summary:
       "The opening brief looked gentle — keep an egg alive for seven days — and promptly produced carnage. A third of the roster scored a clean zero, several admitting their charge did not survive the first commute. Rose turned the challenge into performance art and ran away with a perfect 10, with Karen close behind. A nervy, shell-shocked start to the competition.",
-    moment:
-      'Connor running away with a bag, yet there was no egg inside.',
+    moment: "Connor running away with a bag, yet there was no egg inside.",
     momentPlayerId: "connor",
   },
   "week-02": {

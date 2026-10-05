@@ -353,8 +353,7 @@ const playerIconIndex: Map<string, number> = (() => {
 /** Root-relative path to the avatar SVG assigned to this player. */
 export function getPlayerIcon(player: Player): string {
   const index =
-    playerIconIndex.get(player.id) ??
-    hashString(player.id) % PLAYER_ICON_COUNT;
+    playerIconIndex.get(player.id) ?? hashString(player.id) % PLAYER_ICON_COUNT;
   return `/avatars/player-${String(index + 1).padStart(2, "0")}.svg`;
 }
 
