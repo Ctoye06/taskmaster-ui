@@ -24,11 +24,23 @@ const crackedSrc = withBase("/egg-cracked.svg");
   data-cracked-src={crackedSrc}
   hidden
 >
-  <button type="button" class="walking-egg__btn" aria-label="A wandering egg — poke it (careful, it's fragile)">
-    <img class="walking-egg__img" src={eggSrc} alt="" width="40" height="40" aria-hidden="true" />
+  <button
+    type="button"
+    class="walking-egg__btn"
+    aria-label="A wandering egg — poke it (careful, it's fragile)"
+  >
+    <img
+      class="walking-egg__img"
+      src={eggSrc}
+      alt=""
+      width="40"
+      height="40"
+      aria-hidden="true"
+    />
     <span class="walking-egg__legs" aria-hidden="true"></span>
   </button>
-  <span class="walking-egg__bubble" role="status" aria-hidden="true">EGGY!</span>
+  <span class="walking-egg__bubble" role="status" aria-hidden="true">EGGY!</span
+  >
 </div>
 
 <script>
@@ -58,7 +70,8 @@ const crackedSrc = withBase("/egg-cracked.svg");
 
     const maxX = () => Math.max(MARGIN, window.innerWidth - SIZE - MARGIN);
     const maxY = () => Math.max(MARGIN, window.innerHeight - SIZE - MARGIN);
-    const rand = (min: number, max: number) => min + Math.random() * (max - min);
+    const rand = (min: number, max: number) =>
+      min + Math.random() * (max - min);
 
     function place() {
       root!.style.transform = `translate3d(${x}px, ${y}px, 0)`;
