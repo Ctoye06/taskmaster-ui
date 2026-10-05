@@ -1,0 +1,11 @@
+# Build output & dependencies
+dist/
+node_modules/
+.astro/
+
+# Skill definitions (authored content, not formatted)
+.github/
+
+# Lockfiles & generated assets
+package-lock.json
+*.svg

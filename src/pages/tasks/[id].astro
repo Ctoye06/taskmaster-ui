@@ -5,10 +5,12 @@ import TerminalWindow from "../../components/TerminalWindow.astro";
 import TaskStatusBadge from "../../components/TaskStatusBadge.astro";
 import Countdown from "../../components/Countdown.astro";
 import ScoreBadge from "../../components/ScoreBadge.astro";
+import TaskPager from "../../components/TaskPager.astro";
 import { tasks } from "../../data/tasks";
 import {
   getTaskSummary,
   getTaskResults,
+  getTaskPager,
   getPlayerInitials,
 } from "../../data/queries";
 
@@ -26,6 +28,7 @@ if (!summary) {
 
 const { task, winner, winningScore } = summary;
 const results = task.status === "completed" ? getTaskResults(task.id) : [];
+const pager = getTaskPager(task.id);
 
 const weekLabel = `WEEK ${String(task.weekNumber).padStart(2, "0")}`;
 const isLocked = task.status === "upcoming";
@@ -112,7 +115,8 @@ const btnGhost =
               </p>
               {task.status === "live" && (
                 <p class="mt-6 font-bold tracking-widest text-acid">
-                  &gt; Your time starts now<span class="caret" />
+                  &gt; Your time starts now
+                  <span class="caret" />
                 </p>
               )}
             </div>
@@ -127,11 +131,15 @@ const btnGhost =
         <p class="text-[10px] tracking-[0.2em] text-ink-faint uppercase">
           Released
         </p>
-        <p class="mt-1 font-semibold text-acid">{formatStamp(task.releaseDate)}</p>
+        <p class="mt-1 font-semibold text-acid">
+          {formatStamp(task.releaseDate)}
+        </p>
         <p class="mt-4 text-[10px] tracking-[0.2em] text-ink-faint uppercase">
           Deadline
         </p>
-        <p class="mt-1 font-semibold text-amber">{formatStamp(task.deadline)}</p>
+        <p class="mt-1 font-semibold text-amber">
+          {formatStamp(task.deadline)}
+        </p>
       </div>
 
       <div
@@ -149,7 +157,9 @@ const btnGhost =
             </p>
           ) : (
             <Countdown
-              deadline={task.status === "live" ? task.deadline : task.releaseDate}
+              deadline={
+                task.status === "live" ? task.deadline : task.releaseDate
+              }
             />
           )
         }
@@ -270,5 +280,8 @@ const btnGhost =
         </section>
       )
     }
+
+    <!-- Previous / next task pager -->
+    <TaskPager prev={pager.prev} next={pager.next} class="mt-12" />
   </div>
 </Layout>

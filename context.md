@@ -16,14 +16,14 @@ The UI should initially use **mock/local data only**. Do not implement Supabase,
 
 Use:
 
-* Astro
-* TypeScript
-* Tailwind CSS
-* CSS where custom styling is required
-* No React unless there is a strong technical reason
-* No unnecessary UI libraries
-* No backend
-* No Supabase yet
+- Astro
+- TypeScript
+- Tailwind CSS
+- CSS where custom styling is required
+- No React unless there is a strong technical reason
+- No unnecessary UI libraries
+- No backend
+- No Supabase yet
 
 The site must be responsive and work well on desktop and mobile.
 
@@ -83,20 +83,20 @@ The website should have a strong **Taskmaster / competition-show aesthetic**.
 
 It should feel:
 
-* playful
-* competitive
-* slightly ridiculous
-* energetic
-* polished
-* modern
-* easy to scan
+- playful
+- competitive
+- slightly ridiculous
+- energetic
+- polished
+- modern
+- easy to scan
 
 Avoid making it look like:
 
-* a corporate intranet
-* a generic Tailwind CSS template
-* an e-commerce site
-* a standard CRUD dashboard
+- a corporate intranet
+- a generic Tailwind CSS template
+- an e-commerce site
+- a standard CRUD dashboard
 
 Use bold typography, large headings, cards, badges, rankings and visual hierarchy.
 
@@ -106,13 +106,13 @@ Use a consistent colour palette throughout the site.
 
 Consider using:
 
-* large task numbers
-* trophy/medal icons
-* prominent rankings
-* score badges
-* playful microcopy
-* subtle animations/hover effects
-* visual emphasis on the current week's task
+- large task numbers
+- trophy/medal icons
+- prominent rankings
+- score badges
+- playful microcopy
+- subtle animations/hover effects
+- visual emphasis on the current week's task
 
 Do not overdo animations.
 
@@ -122,10 +122,10 @@ Do not overdo animations.
 
 Create a responsive navbar containing:
 
-* Home
-* Tasks
-* Leaderboard
-* Players
+- Home
+- Tasks
+- Leaderboard
+- Players
 
 Use a strong site title/logo such as:
 
@@ -194,14 +194,14 @@ Include:
 
 Large feature card showing:
 
-* week number
-* title
-* short description
-* release date
-* deadline
-* countdown
-* status
-* "View Task" button
+- week number
+- title
+- short description
+- release date
+- deadline
+- countdown
+- status
+- "View Task" button
 
 ### Current Leaderboard
 
@@ -229,19 +229,19 @@ Show the previous 3 completed tasks.
 
 For each:
 
-* task name
-* winner
-* winning score
-* completion date
+- task name
+- winner
+- winning score
+- completion date
 
 ### Competition Stats
 
 Show interesting high-level statistics:
 
-* 25 Players
-* 4 Tasks Completed
-* 188 Points Awarded
-* 4 Different Winners
+- 25 Players
+- 4 Tasks Completed
+- 188 Points Awarded
+- 4 Different Winners
 
 ---
 
@@ -270,9 +270,9 @@ Callum
 
 Use different visual states:
 
-* Upcoming
-* Live
-* Completed
+- Upcoming
+- Live
+- Completed
 
 Upcoming tasks should not reveal their description.
 
@@ -292,15 +292,15 @@ Create:
 
 The page should contain:
 
-* Week number
-* Task title
-* Task description
-* Taskmaster-style instructions
-* Release date
-* Deadline
-* Countdown
-* Rules
-* Results if completed
+- Week number
+- Task title
+- Task description
+- Taskmaster-style instructions
+- Release date
+- Deadline
+- Countdown
+- Rules
+- Results if completed
 
 Example task:
 
@@ -343,12 +343,12 @@ This is one of the most important pages.
 
 Create a polished leaderboard with:
 
-* rank
-* player
-* total points
-* tasks completed
-* wins
-* average position
+- rank
+- player
+- total points
+- tasks completed
+- wins
+- average position
 
 Example:
 
@@ -380,11 +380,11 @@ Show all 25 players.
 
 Each player card should include:
 
-* name
-* current rank
-* total points
-* number of wins
-* avatar/initials
+- name
+- current rank
+- total points
+- number of wins
+- avatar/initials
 
 Clicking a player opens:
 
@@ -423,9 +423,9 @@ Include a simple visual progression/chart if practical without introducing a cha
 
 Create realistic mock data for:
 
-* 25 players
-* 8-16 tasks
-* scores for completed tasks
+- 25 players
+- 8-16 tasks
+- scores for completed tasks
 
 Use TypeScript types.
 
@@ -472,15 +472,15 @@ Create reusable components rather than duplicating markup.
 
 At minimum:
 
-* `Navbar`
-* `Footer`
-* `TaskCard`
-* `LeaderboardTable`
-* `PlayerCard`
-* `ScoreBadge`
-* `Countdown`
-* `StatCard`
-* `TaskStatusBadge`
+- `Navbar`
+- `Footer`
+- `TaskCard`
+- `LeaderboardTable`
+- `PlayerCard`
+- `ScoreBadge`
+- `Countdown`
+- `StatCard`
+- `TaskStatusBadge`
 
 Components should receive data through props.
 
@@ -490,17 +490,17 @@ Components should receive data through props.
 
 The site must work properly at:
 
-* desktop
-* tablet
-* mobile
+- desktop
+- tablet
+- mobile
 
 Pay particular attention to:
 
-* leaderboard tables
-* navigation
-* task cards
-* countdown
-* player profiles
+- leaderboard tables
+- navigation
+- task cards
+- countdown
+- player profiles
 
 Do not simply shrink desktop layouts.
 
@@ -512,13 +512,13 @@ Use appropriate Tailwind CSS responsive utilities and grids.
 
 Follow good accessibility practices:
 
-* semantic HTML
-* proper heading hierarchy
-* accessible buttons/links
-* meaningful alt text
-* sufficient colour contrast
-* keyboard navigation
-* don't rely solely on colour to indicate status
+- semantic HTML
+- proper heading hierarchy
+- accessible buttons/links
+- meaningful alt text
+- sufficient colour contrast
+- keyboard navigation
+- don't rely solely on colour to indicate status
 
 ---
 
@@ -548,19 +548,19 @@ Avoid putting hard-coded player/task data directly inside components.
 
 Keep the architecture ready for:
 
-* Supabase authentication
-* player accounts
-* admin accounts
-* task submissions
-* score entry
-* live leaderboards
-* weekly automatic task releases
-* player statistics
-* task history
-* achievements
-* teams
-* bonus points
-* penalties
+- Supabase authentication
+- player accounts
+- admin accounts
+- task submissions
+- score entry
+- live leaderboards
+- weekly automatic task releases
+- player statistics
+- task history
+- achievements
+- teams
+- bonus points
+- penalties
 
 Do not implement these yet.
 

@@ -2,6 +2,9 @@
 import "../styles/global.css";
 import Navbar from "../components/Navbar.astro";
 import Footer from "../components/Footer.astro";
+import CommandPalette from "../components/CommandPalette.astro";
+import WhatsNewBanner from "../components/WhatsNewBanner.astro";
+import { getCommandPaletteItems, getWhatsNew } from "../data/queries";
 
 interface Props {
   title?: string;
@@ -12,6 +15,9 @@ const {
   title = "EAYL TASKMASTER // Engineering Academy Challenge",
   description = "16 weeks. 25 players. One winner. The Engineering Academy Taskmaster challenge.",
 } = Astro.props;
+
+const paletteItems = getCommandPaletteItems();
+const whatsNew = getWhatsNew();
 ---
 
 <!doctype html>
@@ -39,9 +45,11 @@ const {
       >Skip to content</a
     >
     <Navbar />
+    <WhatsNewBanner info={whatsNew} />
     <main id="main" class="flex-1">
       <slot />
     </main>
     <Footer />
+    <CommandPalette items={paletteItems} />
   </body>
 </html>

@@ -6,8 +6,9 @@
 /*  (e.g. bg-term-bg, text-acid, border-grid).                         */
 /* ------------------------------------------------------------------ */
 @theme {
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo",
-    "Consolas", monospace;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo", "Consolas",
+    monospace;
 
   --color-term-bg: #080b10;
   --color-term-panel: #0e141c;
@@ -49,7 +50,10 @@ body {
     ),
     linear-gradient(var(--color-grid-soft) 1px, transparent 1px),
     linear-gradient(90deg, var(--color-grid-soft) 1px, transparent 1px);
-  background-size: 100% 100%, 44px 44px, 44px 44px;
+  background-size:
+    100% 100%,
+    44px 44px,
+    44px 44px;
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -134,6 +138,15 @@ body::before {
   }
   html {
     scroll-behavior: auto;
+  }
+  /* Safety net: neutralise any remaining motion (hover transitions, future
+     animations) for users who ask for reduced motion. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

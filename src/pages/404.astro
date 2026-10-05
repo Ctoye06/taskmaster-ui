@@ -1,0 +1,62 @@
+---
+import Layout from "../layouts/Layout.astro";
+import TerminalWindow from "../components/TerminalWindow.astro";
+
+const btnPrimary =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-acid bg-acid/10 px-5 py-2.5 text-sm font-bold tracking-widest text-acid transition-colors hover:bg-acid hover:text-term-bg focus-visible:outline-none";
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
+
+const links = [
+  { href: "/tasks", label: "tasks" },
+  { href: "/leaderboard", label: "leaderboard" },
+  { href: "/compare", label: "compare" },
+  { href: "/stats", label: "stats" },
+  { href: "/players", label: "players" },
+];
+---
+
+<Layout title="404 — Not Found // EAYL TASKMASTER">
+  <div class="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
+    <p class="text-sm font-bold tracking-[0.3em] text-magenta">ERROR 404</p>
+    <h1
+      class="mt-3 text-6xl font-extrabold tracking-tight text-ink text-glow sm:text-8xl"
+    >
+      Not Found
+    </h1>
+    <p class="mt-4 max-w-md text-sm text-ink-dim">
+      The Taskmaster searched everywhere and came back empty-handed. This page
+      either never existed or has been disqualified.
+    </p>
+
+    <div class="mt-8">
+      <TerminalWindow title="~/taskmaster.sh" meta="exit code 404">
+        <pre
+          class="overflow-x-auto text-sm leading-relaxed text-ink-dim"><span class="text-acid">$</span> cd {Astro.url.pathname}
+<span class="text-danger">bash: cd: {Astro.url.pathname}: No such file or directory</span>
+<span class="text-acid">$</span> <span class="caret">whereis --home</span></pre>
+      </TerminalWindow>
+    </div>
+
+    <div class="mt-8 flex flex-wrap items-center gap-3">
+      <a href="/" class={btnPrimary}>&larr; RETURN HOME</a>
+    </div>
+
+    <nav class="mt-8" aria-label="Site sections">
+      <p class="mb-2 text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+        or jump to
+      </p>
+      <ul class="flex flex-wrap gap-2">
+        {
+          links.map((link) => (
+            <li>
+              <a href={link.href} class={btnGhost}>
+                ./{link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</Layout>

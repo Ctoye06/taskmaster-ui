@@ -3,10 +3,12 @@ import type { GetStaticPaths } from "astro";
 import Layout from "../../layouts/Layout.astro";
 import TerminalWindow from "../../components/TerminalWindow.astro";
 import StatCard from "../../components/StatCard.astro";
+import ComparePicker from "../../components/ComparePicker.astro";
 import { players } from "../../data/players";
 import {
   getPlayerStanding,
   getPlayerResults,
+  getPlayerCompareOptions,
   getPlayerInitials,
 } from "../../data/queries";
 
@@ -27,9 +29,8 @@ const results = getPlayerResults(player.id);
 
 const initials = getPlayerInitials(player);
 const hasPlayed = standing.tasksCompleted > 0;
-const bestFinish = hasPlayed
-  ? Math.min(...results.map((r) => r.position))
-  : 0;
+const bestFinish = hasPlayed ? Math.min(...results.map((r) => r.position)) : 0;
+const compareOptions = getPlayerCompareOptions(player.id);
 
 const medal = (position: number) =>
   position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
@@ -60,7 +61,9 @@ const btnGhost =
 
     <!-- Header -->
     <header class="mt-6">
-      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+      <p
+        class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
         cat ~/players/{player.id}.md
       </p>
       <div class="mt-4 flex items-center gap-4 sm:gap-5">
@@ -86,7 +89,8 @@ const btnGhost =
             </span>
             <span class="text-ink-faint" aria-hidden="true">·</span>
             <span class="text-ink-dim">
-              {standing.wins} {standing.wins === 1 ? "win" : "wins"}
+              {standing.wins}
+              {standing.wins === 1 ? "win" : "wins"}
             </span>
           </p>
         </div>
@@ -123,10 +127,21 @@ const btnGhost =
       </div>
     </section>
 
+    <!-- Compare with… entry point -->
+    <ComparePicker
+      playerId={player.id}
+      playerName={player.name}
+      rival={compareOptions.rival}
+      opponents={compareOptions.opponents}
+      class="mt-8"
+    />
+
     <!-- Task-by-task record -->
     <section class="mt-12">
       <div class="mb-4 flex items-end justify-between gap-4">
-        <h2 class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        <h2
+          class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+        >
           history --player {player.id}
         </h2>
         {
@@ -237,8 +252,8 @@ const btnGhost =
       </TerminalWindow>
 
       <p class="mt-4 text-[11px] text-ink-faint">
-        <span class="text-acid">//</span> Points awarded by finishing position —
-        10 for a win, down to 1. See the
+        <span class="text-acid">//</span> Points awarded by finishing position — 10
+        for a win, down to 1. See the
         <a href="/leaderboard" class="text-cyan hover:text-ink">
           full leaderboard
         </a>

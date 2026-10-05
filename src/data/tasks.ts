@@ -41,10 +41,8 @@ export const tasks: Task[] = [
     id: "week-04",
     weekNumber: 4,
     title: "???",
-    description:
-      "",
-    brief:
-      "",
+    description: "",
+    brief: "",
     releaseDate: "2026-10-09T15:00:00",
     deadline: "2026-10-16T15:00:00",
     status: "upcoming",
@@ -176,5 +174,8 @@ export function getTaskById(id: string): Task | undefined {
 }
 
 export function getCurrentTask(): Task | undefined {
-  return tasks.find((t) => t.status === "live") ?? tasks.find((t) => t.status === "upcoming");
+  return (
+    tasks.find((t) => t.status === "live") ??
+    tasks.find((t) => t.status === "upcoming")
+  );
 }

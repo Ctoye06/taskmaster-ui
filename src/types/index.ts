@@ -48,6 +48,10 @@ export interface LeaderboardRow {
   averagePosition: number;
   /** Recent finishing positions, most recent last. */
   form: number[];
+  /** Rank on the standings before the most recent completed task. */
+  previousRank?: number;
+  /** Places gained since the previous standings (positive = moved up). */
+  movement?: number;
 }
 
 export interface TaskResult {
@@ -72,6 +76,51 @@ export interface TaskResultRow {
   player: Player;
   points: number;
   comment?: string;
+}
+
+/**
+ * The "what changed since you last visited" signal: the current task used to
+ * highlight when a new week has gone live. `taskId` is the change key the
+ * client compares against the visitor's last acknowledged task.
+ */
+export interface WhatsNewInfo {
+  taskId: string;
+  weekNumber: number;
+  /** Display title, falling back to the week label for unrevealed tasks. */
+  title: string;
+  status: TaskStatus;
+  /** Link to the task detail page. */
+  href: string;
+}
+
+/** One side of the previous/next task pager on a task detail page. */
+export interface TaskPagerLink {
+  href: string;
+  weekNumber: number;
+  /** Display title, falling back to the week label for unrevealed tasks. */
+  title: string;
+  status: TaskStatus;
+}
+
+/** Adjacent tasks either side of the one being viewed. */
+export interface TaskPager {
+  prev?: TaskPagerLink;
+  next?: TaskPagerLink;
+}
+
+/** One selectable opponent in the player-profile compare picker. */
+export interface CompareOpponent {
+  id: string;
+  name: string;
+  rank: number;
+}
+
+/** Data for the "compare with…" entry point on a player profile. */
+export interface PlayerCompareOptions {
+  /** Suggested opponent: the player directly adjacent on the standings. */
+  rival?: CompareOpponent;
+  /** Every other player, ordered by rank, for the dropdown. */
+  opponents: CompareOpponent[];
 }
 
 /** A single player's outcome on one task, for the player detail page. */
@@ -114,9 +163,44 @@ export interface PlayerComparison {
   };
 }
 
+/** Which bucket a command-palette entry belongs to (section + icon). */
+export type CommandPaletteGroup = "page" | "task" | "player";
+
+/** A single searchable destination in the global command palette. */
+export interface CommandPaletteItem {
+  /** Stable unique id, used as the DOM key for the rendered row. */
+  id: string;
+  /** Primary label shown in the list. */
+  label: string;
+  /** Grouping used for the section heading and leading glyph. */
+  group: CommandPaletteGroup;
+  /** Destination URL. */
+  href: string;
+  /** Optional supporting text, e.g. a week label, rank or status. */
+  hint?: string;
+  /** Extra terms folded into the fuzzy-search haystack but not displayed. */
+  keywords?: string;
+}
+
 export interface CompetitionStats {
   totalPlayers: number;
   tasksCompleted: number;
   pointsAwarded: number;
   differentWinners: number;
+}
+
+/** A single Hall of Fame / superlative award for the stats page. */
+export interface Award {
+  id: string;
+  /** Award name, e.g. "Most Wins". */
+  title: string;
+  /** Command-style sub-label, e.g. "max wins". */
+  command: string;
+  /** The honoured player, when the award belongs to someone. */
+  player?: Player;
+  /** Headline value, pre-formatted, e.g. "3 wins". */
+  value: string;
+  /** Supporting context, e.g. the task it relates to. */
+  detail?: string;
+  accent: "acid" | "magenta" | "amber" | "cyan";
 }

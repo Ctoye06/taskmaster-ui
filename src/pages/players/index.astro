@@ -14,7 +14,9 @@ const unscored = roster.filter((row) => row.tasksCompleted === 0).length;
   <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
     <!-- Page header -->
     <header>
-      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+      <p
+        class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
         ls ~/players
       </p>
       <h1
@@ -22,10 +24,12 @@ const unscored = roster.filter((row) => row.tasksCompleted === 0).length;
       >
         THE <span class="text-acid text-glow">ROSTER</span>
       </h1>
-      <p class="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base">
-        <span class="text-acid">//</span> {stats.totalPlayers} players, one
-        trophy. Ordered by current standing. Tap a player to inspect their
-        task-by-task record.
+      <p
+        class="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base"
+      >
+        <span class="text-acid">//</span>
+        {stats.totalPlayers} players, one trophy. Ordered by current standing. Tap
+        a player to inspect their task-by-task record.
       </p>
     </header>
 
@@ -61,7 +65,9 @@ const unscored = roster.filter((row) => row.tasksCompleted === 0).length;
 
     <!-- Roster grid -->
     <section class="mt-12">
-      <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
         players --all
       </h2>
       <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">

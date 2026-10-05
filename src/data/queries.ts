@@ -1,34 +1,44 @@
 import type {
+  Award,
+  CommandPaletteItem,
+  CompareOpponent,
   CompetitionStats,
   LeaderboardRow,
   Player,
+  PlayerCompareOptions,
   PlayerComparison,
   PlayerTaskResult,
+  Score,
   TaskResult,
   TaskResultRow,
   TaskSummary,
+  Task,
+  TaskPager,
+  TaskPagerLink,
+  WhatsNewInfo,
 } from "../types";
 import { players, getPlayerById } from "./players";
-import { tasks, getTaskById } from "./tasks";
+import { tasks, getTaskById, getCurrentTask } from "./tasks";
 import { scores } from "./scores";
 
 // This module is the single "data layer" the UI talks to. Pages import these
 // derived selectors rather than raw records, so moving to Supabase later only
 // means re-implementing these functions.
 
-/**
- * Full leaderboard, sorted by points (then wins, then average position).
- * Every player appears even if they have not scored yet.
- */
-export function getLeaderboard(): LeaderboardRow[] {
-  const completedWeek = new Map(tasks.map((t) => [t.id, t.weekNumber]));
+const completedWeekByTask = new Map(tasks.map((t) => [t.id, t.weekNumber]));
 
+/**
+ * Builds and ranks the standings from an arbitrary set of scores. Used both
+ * for the current table and for historical snapshots (rank movement).
+ */
+function computeStandings(scoreSet: Score[]): LeaderboardRow[] {
   const rows = players.map((player) => {
-    const playerScores = scores
+    const playerScores = scoreSet
       .filter((s) => s.playerId === player.id)
       .sort(
         (a, b) =>
-          (completedWeek.get(a.taskId) ?? 0) - (completedWeek.get(b.taskId) ?? 0),
+          (completedWeekByTask.get(a.taskId) ?? 0) -
+          (completedWeekByTask.get(b.taskId) ?? 0),
       );
 
     const points = playerScores.reduce((sum, s) => sum + s.points, 0);
@@ -59,13 +69,55 @@ export function getLeaderboard(): LeaderboardRow[] {
   return rows.map((row, index) => ({ rank: index + 1, ...row }));
 }
 
+/**
+ * Full leaderboard, sorted by points (then wins, then average position).
+ * Every player appears even if they have not scored yet.
+ */
+export function getLeaderboard(): LeaderboardRow[] {
+  return computeStandings(scores);
+}
+
+/**
+ * The leaderboard annotated with each player's movement since the standings
+ * before the most recent completed task (positive movement = climbed).
+ * Movement is omitted when there is no earlier task to compare against.
+ */
+export function getLeaderboardWithMovement(): LeaderboardRow[] {
+  const current = getLeaderboard();
+  const completedWeeks = tasks
+    .filter((t) => t.status === "completed")
+    .map((t) => t.weekNumber);
+
+  if (completedWeeks.length < 2) return current;
+
+  const latestWeek = Math.max(...completedWeeks);
+  const previousScores = scores.filter(
+    (s) => (completedWeekByTask.get(s.taskId) ?? Infinity) < latestWeek,
+  );
+  const previousRankByPlayer = new Map(
+    computeStandings(previousScores).map((row) => [row.player.id, row.rank]),
+  );
+
+  return current.map((row) => {
+    const previousRank = previousRankByPlayer.get(row.player.id);
+    return {
+      ...row,
+      previousRank,
+      movement:
+        previousRank !== undefined ? previousRank - row.rank : undefined,
+    };
+  });
+}
+
 /** Top N leaderboard rows (defaults to 5 for the homepage). */
 export function getTopPlayers(limit = 5): LeaderboardRow[] {
   return getLeaderboard().slice(0, limit);
 }
 
 /** A single player's standing row (rank, points, form, …) if they exist. */
-export function getPlayerStanding(playerId: string): LeaderboardRow | undefined {
+export function getPlayerStanding(
+  playerId: string,
+): LeaderboardRow | undefined {
   return getLeaderboard().find((row) => row.player.id === playerId);
 }
 
@@ -99,7 +151,9 @@ export function getRecentResults(limit = 3): TaskResult[] {
     const winnerScore = scores.find(
       (s) => s.taskId === task.id && s.position === 1,
     );
-    const winner = winnerScore ? getPlayerById(winnerScore.playerId) : undefined;
+    const winner = winnerScore
+      ? getPlayerById(winnerScore.playerId)
+      : undefined;
     if (winnerScore && winner) {
       results.push({
         task,
@@ -241,4 +295,309 @@ export function getPlayerInitials(player: Player): string {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+/**
+ * Playful Hall of Fame superlatives for the stats page. Each award is derived
+ * from the current data; awards with no qualifying data are omitted.
+ */
+export function getAwards(): Award[] {
+  const awards: Award[] = [];
+  const leaderboard = getLeaderboardWithMovement();
+  const played = leaderboard.filter((row) => row.tasksCompleted > 0);
+
+  // Reigning champion — whoever tops the table.
+  const champion = leaderboard[0];
+  if (champion && champion.tasksCompleted > 0) {
+    awards.push({
+      id: "champion",
+      title: "Reigning Champion",
+      command: "rank --top 1",
+      player: champion.player,
+      value: `${champion.points} pts`,
+      detail: "Leads the academy",
+      accent: "amber",
+    });
+  }
+
+  // Most task wins.
+  const mostWins = [...played].sort((a, b) => b.wins - a.wins)[0];
+  if (mostWins && mostWins.wins > 0) {
+    awards.push({
+      id: "most-wins",
+      title: "Serial Winner",
+      command: "max wins",
+      player: mostWins.player,
+      value: `${mostWins.wins} ${mostWins.wins === 1 ? "win" : "wins"}`,
+      detail: "Most task victories",
+      accent: "acid",
+    });
+  }
+
+  // Highest single-task score.
+  const topScore = [...scores].sort((a, b) => b.points - a.points)[0];
+  if (topScore) {
+    const player = getPlayerById(topScore.playerId);
+    const task = getTaskById(topScore.taskId);
+    if (player && task) {
+      awards.push({
+        id: "top-score",
+        title: "Highest Score",
+        command: "max points",
+        player,
+        value: `${topScore.points} pts`,
+        detail: `Week ${String(task.weekNumber).padStart(2, "0")} · ${task.title}`,
+        accent: "magenta",
+      });
+    }
+  }
+
+  // Most consistent — best average finishing position (min 2 tasks).
+  const consistent = played
+    .filter((row) => row.tasksCompleted >= 2)
+    .sort((a, b) => a.averagePosition - b.averagePosition)[0];
+  if (consistent) {
+    awards.push({
+      id: "most-consistent",
+      title: "Mr/Ms Reliable",
+      command: "min avg-position",
+      player: consistent.player,
+      value: `${consistent.averagePosition.toFixed(1)} avg`,
+      detail: "Best average finish",
+      accent: "cyan",
+    });
+  }
+
+  // Biggest climber since the previous standings.
+  const climber = [...leaderboard]
+    .filter((row) => typeof row.movement === "number" && row.movement > 0)
+    .sort((a, b) => (b.movement ?? 0) - (a.movement ?? 0))[0];
+  if (climber && climber.movement) {
+    awards.push({
+      id: "climber",
+      title: "Biggest Climber",
+      command: "max rank-gain",
+      player: climber.player,
+      value: `+${climber.movement}`,
+      detail: "Places gained last task",
+      accent: "acid",
+    });
+  }
+
+  // Biggest winning margin across completed tasks.
+  const completedTasks = tasks.filter((t) => t.status === "completed");
+  let widest: { task: (typeof completedTasks)[number]; margin: number } | null =
+    null;
+  let closest: {
+    task: (typeof completedTasks)[number];
+    margin: number;
+  } | null = null;
+  for (const task of completedTasks) {
+    const results = getTaskResults(task.id);
+    if (results.length < 2) continue;
+    const margin = results[0].points - results[1].points;
+    if (!widest || margin > widest.margin) widest = { task, margin };
+    if (!closest || margin < closest.margin) closest = { task, margin };
+  }
+
+  if (widest) {
+    const [winner] = getTaskResults(widest.task.id);
+    if (winner) {
+      awards.push({
+        id: "biggest-margin",
+        title: "Runaway Victory",
+        command: "max margin",
+        player: winner.player,
+        value: `+${widest.margin} pts`,
+        detail: `Week ${String(widest.task.weekNumber).padStart(2, "0")} · ${widest.task.title}`,
+        accent: "amber",
+      });
+    }
+  }
+
+  if (closest) {
+    const [winner, runnerUp] = getTaskResults(closest.task.id);
+    if (winner && runnerUp) {
+      awards.push({
+        id: "closest-finish",
+        title: "Photo Finish",
+        command: "min margin",
+        player: winner.player,
+        value: closest.margin === 0 ? "dead heat" : `${closest.margin} pt`,
+        detail: `Edged out ${runnerUp.player.name} · ${closest.task.title}`,
+        accent: "magenta",
+      });
+    }
+  }
+
+  return awards;
+}
+
+// Static top-level destinations, listed first so the palette is useful even
+// before the user types anything.
+const PALETTE_PAGES: CommandPaletteItem[] = [
+  {
+    id: "page-home",
+    label: "Home",
+    group: "page",
+    href: "/",
+    hint: "current task & overview",
+    keywords: "start index dashboard",
+  },
+  {
+    id: "page-tasks",
+    label: "Tasks",
+    group: "page",
+    href: "/tasks",
+    hint: "every weekly brief",
+    keywords: "weeks briefs challenges",
+  },
+  {
+    id: "page-leaderboard",
+    label: "Leaderboard",
+    group: "page",
+    href: "/leaderboard",
+    hint: "full standings",
+    keywords: "ranks table standings top",
+  },
+  {
+    id: "page-compare",
+    label: "Compare",
+    group: "page",
+    href: "/compare",
+    hint: "head-to-head",
+    keywords: "versus vs head to head",
+  },
+  {
+    id: "page-stats",
+    label: "Stats",
+    group: "page",
+    href: "/stats",
+    hint: "hall of fame & awards",
+    keywords: "summary superlatives records",
+  },
+  {
+    id: "page-players",
+    label: "Players",
+    group: "page",
+    href: "/players",
+    hint: "the roster",
+    keywords: "competitors roster people",
+  },
+];
+
+/**
+ * Flat, searchable index of every destination in the app (pages, tasks and
+ * players) for the global command palette. Computing it here keeps the data
+ * concerns out of the component, which renders the resulting props only.
+ */
+export function getCommandPaletteItems(): CommandPaletteItem[] {
+  const taskItems: CommandPaletteItem[] = [...tasks]
+    .sort((a, b) => a.weekNumber - b.weekNumber)
+    .map((task) => {
+      const weekLabel = `Week ${String(task.weekNumber).padStart(2, "0")}`;
+      const named = task.title.length > 0 && task.title !== "???";
+      return {
+        id: `task-${task.id}`,
+        label: named ? task.title : weekLabel,
+        group: "task" as const,
+        href: `/tasks/${task.id}`,
+        hint: `${weekLabel} · ${task.status}`,
+        keywords: `${weekLabel} ${task.status} ${task.description}`,
+      };
+    });
+
+  const standingByPlayer = new Map(
+    getLeaderboard().map((row) => [row.player.id, row]),
+  );
+
+  const playerItems: CommandPaletteItem[] = players.map((player) => {
+    const row = standingByPlayer.get(player.id);
+    return {
+      id: `player-${player.id}`,
+      label: player.name,
+      group: "player" as const,
+      href: `/players/${player.id}`,
+      hint: row ? `rank #${row.rank} · ${row.points} pts` : "unranked",
+      keywords: player.team ?? "",
+    };
+  });
+
+  return [...PALETTE_PAGES, ...taskItems, ...playerItems];
+}
+
+/**
+ * The current task (live, else the next upcoming) distilled into the signal
+ * the "what's new" banner compares against the visitor's last-seen task.
+ */
+export function getWhatsNew(): WhatsNewInfo | undefined {
+  const task = getCurrentTask();
+  if (!task) return undefined;
+
+  const weekLabel = `Week ${String(task.weekNumber).padStart(2, "0")}`;
+  const named = task.title.length > 0 && task.title !== "???";
+
+  return {
+    taskId: task.id,
+    weekNumber: task.weekNumber,
+    title: named ? task.title : weekLabel,
+    status: task.status,
+    href: `/tasks/${task.id}`,
+  };
+}
+
+/**
+ * The tasks immediately before and after a given task, by week number, for
+ * the previous/next pager on a task detail page.
+ */
+export function getTaskPager(taskId: string): TaskPager {
+  const ordered = [...tasks].sort((a, b) => a.weekNumber - b.weekNumber);
+  const index = ordered.findIndex((t) => t.id === taskId);
+  if (index === -1) return {};
+
+  const toLink = (task: Task): TaskPagerLink => {
+    const named = task.title.length > 0 && task.title !== "???";
+    return {
+      href: `/tasks/${task.id}`,
+      weekNumber: task.weekNumber,
+      title: named
+        ? task.title
+        : `Week ${String(task.weekNumber).padStart(2, "0")}`,
+      status: task.status,
+    };
+  };
+
+  return {
+    prev: index > 0 ? toLink(ordered[index - 1]) : undefined,
+    next: index < ordered.length - 1 ? toLink(ordered[index + 1]) : undefined,
+  };
+}
+
+/**
+ * Options for the "compare with…" entry point on a player profile: a
+ * suggested nearest rival (the adjacent player on the standings) plus every
+ * other player for the dropdown, all ordered by rank.
+ */
+export function getPlayerCompareOptions(
+  playerId: string,
+): PlayerCompareOptions {
+  const leaderboard = getLeaderboard();
+  const index = leaderboard.findIndex((row) => row.player.id === playerId);
+  if (index === -1) return { opponents: [] };
+
+  const toOpponent = (row: LeaderboardRow): CompareOpponent => ({
+    id: row.player.id,
+    name: row.player.name,
+    rank: row.rank,
+  });
+
+  // Nearest rival: prefer the player directly above, else the one below.
+  const rivalRow = leaderboard[index - 1] ?? leaderboard[index + 1];
+
+  return {
+    rival: rivalRow ? toOpponent(rivalRow) : undefined,
+    opponents: leaderboard
+      .filter((row) => row.player.id !== playerId)
+      .map(toOpponent),
+  };
 }

@@ -124,7 +124,9 @@ const cellResult = (result?: { position: number; points: number }) => result;
   class="rounded-lg border border-grid bg-term-panel/60 p-4 sm:p-5"
   aria-label="Choose two players to compare"
 >
-  <p class="prompt mb-3 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+  <p
+    class="prompt mb-3 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+  >
     compare --players
   </p>
   <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_1fr]">
@@ -176,7 +178,9 @@ const cellResult = (result?: { position: number; points: number }) => result;
 </form>
 
 <!-- Versus header -->
-<section class="mt-6 grid grid-cols-[1fr_auto_1fr] items-stretch gap-3 sm:gap-4">
+<section
+  class="mt-6 grid grid-cols-[1fr_auto_1fr] items-stretch gap-3 sm:gap-4"
+>
   <a
     href={`/players/${a.player.id}`}
     class:list={[
@@ -245,7 +249,9 @@ const cellResult = (result?: { position: number; points: number }) => result;
 
 <!-- Metric comparison -->
 <section class="mt-8">
-  <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+  <h2
+    class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+  >
     diff --stats
   </h2>
   <TerminalWindow
@@ -268,7 +274,9 @@ const cellResult = (result?: { position: number; points: number }) => result;
 
 <!-- Task-by-task breakdown -->
 <section class="mt-8">
-  <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+  <h2
+    class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+  >
     log --task-by-task
   </h2>
   <TerminalWindow

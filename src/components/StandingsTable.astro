@@ -27,6 +27,26 @@ const formClasses = (position: number) => {
   return "border-grid bg-term-bg text-ink-faint";
 };
 
+// Rank movement since the previous task: climbed (▲), dropped (▼) or held (–).
+const movementMeta = (movement?: number) => {
+  if (typeof movement !== "number") return null;
+  if (movement > 0)
+    return {
+      icon: "▲",
+      text: String(movement),
+      cls: "text-acid",
+      label: `up ${movement}`,
+    };
+  if (movement < 0)
+    return {
+      icon: "▼",
+      text: String(Math.abs(movement)),
+      cls: "text-danger",
+      label: `down ${Math.abs(movement)}`,
+    };
+  return { icon: "–", text: "", cls: "text-ink-faint", label: "no change" };
+};
+
 const th =
   "px-3 py-2.5 text-left text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase";
 ---
@@ -71,6 +91,22 @@ const th =
                 </span>
               )}
               <span class="sr-only">Rank {row.rank}</span>
+              {movementMeta(row.movement) && (
+                <span
+                  class:list={[
+                    "mt-1 flex items-center justify-center gap-0.5 text-[10px] font-bold tabular-nums",
+                    movementMeta(row.movement)!.cls,
+                  ]}
+                >
+                  <span aria-hidden="true">
+                    {movementMeta(row.movement)!.icon}
+                  </span>
+                  {movementMeta(row.movement)!.text}
+                  <span class="sr-only">
+                    {movementMeta(row.movement)!.label}
+                  </span>
+                </span>
+              )}
             </td>
 
             <td class="px-3 py-3">
@@ -109,9 +145,7 @@ const th =
             </td>
 
             <td class="hidden px-3 py-3 text-center tabular-nums text-ink-dim lg:table-cell">
-              {row.averagePosition > 0
-                ? row.averagePosition.toFixed(1)
-                : "—"}
+              {row.averagePosition > 0 ? row.averagePosition.toFixed(1) : "—"}
             </td>
 
             <td class="hidden px-3 py-3 lg:table-cell">

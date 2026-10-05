@@ -10,8 +10,7 @@ interface Props {
 const { row, class: className = "" } = Astro.props;
 const { player, rank } = row;
 
-const medal =
-  rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
 
 // Emphasise the podium positions with a tinted frame.
 const frame =
@@ -41,7 +40,9 @@ const frame =
   </span>
 
   <div class="flex items-center gap-3">
-    <span class="flex w-7 shrink-0 justify-center text-lg font-extrabold tabular-nums">
+    <span
+      class="flex w-7 shrink-0 justify-center text-lg font-extrabold tabular-nums"
+    >
       {
         medal ? (
           <span aria-hidden="true">{medal}</span>
@@ -60,11 +61,14 @@ const frame =
     </span>
 
     <span class="min-w-0 flex-1">
-      <span class="block truncate text-base font-extrabold text-ink group-hover:text-acid">
+      <span
+        class="block truncate text-base font-extrabold text-ink group-hover:text-acid"
+      >
         {player.name}
       </span>
       <span class="block text-[11px] text-ink-faint">
-        {row.wins} {row.wins === 1 ? "win" : "wins"} &middot; {row.tasksCompleted} played
+        {row.wins}
+        {row.wins === 1 ? "win" : "wins"} &middot; {row.tasksCompleted} played
       </span>
     </span>
   </div>

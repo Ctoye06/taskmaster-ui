@@ -1,0 +1,97 @@
+---
+import type { CompareOpponent } from "../types";
+
+interface Props {
+  /** The player whose profile this picker lives on. */
+  playerId: string;
+  playerName: string;
+  /** Suggested opponent (nearest rival on the standings). */
+  rival?: CompareOpponent;
+  /** All other players, ordered by rank, for the dropdown. */
+  opponents: CompareOpponent[];
+  class?: string;
+}
+
+const {
+  playerId,
+  playerName,
+  rival,
+  opponents,
+  class: className = "",
+} = Astro.props;
+
+const compareBase = `/compare/${playerId}`;
+const selectId = `compare-with-${playerId}`;
+
+const btnPrimary =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-acid bg-acid/10 px-4 py-2 text-xs font-bold tracking-widest text-acid transition-colors hover:bg-acid hover:text-term-bg";
+---
+
+{
+  opponents.length > 0 && (
+    <div
+      class:list={[
+        "rounded-lg border border-grid bg-term-panel p-4 sm:p-5",
+        className,
+      ]}
+    >
+      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        diff --with
+      </p>
+      <p class="mt-2 text-sm text-ink-dim">
+        See how <span class="font-semibold text-ink">{playerName}</span> stacks
+        up head-to-head against anyone in the academy.
+      </p>
+
+      <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+        {rival && (
+          <a
+            href={`${compareBase}/${rival.id}`}
+            class={btnPrimary}
+            data-compare-rival
+          >
+            &gt; VS {rival.name.toUpperCase()}{" "}
+            <span class="text-ink-faint">#{rival.rank}</span>
+          </a>
+        )}
+
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <label
+            for={selectId}
+            class="text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+          >
+            or pick an opponent
+          </label>
+          <select
+            id={selectId}
+            data-compare-select
+            data-compare-base={compareBase}
+            class="w-full rounded-md border border-grid bg-term-bg px-3 py-2 text-sm text-ink focus-visible:border-acid focus-visible:outline-none"
+          >
+            <option value="" selected disabled>
+              select a player…
+            </option>
+            {opponents.map((opponent) => (
+              <option value={opponent.id}>
+                #{opponent.rank} · {opponent.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+<script>
+  document
+    .querySelectorAll<HTMLSelectElement>("[data-compare-select]")
+    .forEach((select) => {
+      select.addEventListener("change", () => {
+        const base = select.dataset.compareBase;
+        if (base && select.value) {
+          window.location.href = `${base}/${select.value}`;
+        }
+      });
+    });
+</script>

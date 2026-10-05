@@ -1,0 +1,61 @@
+---
+import type { TaskPagerLink } from "../types";
+
+interface Props {
+  prev?: TaskPagerLink;
+  next?: TaskPagerLink;
+  class?: string;
+}
+
+const { prev, next, class: className = "" } = Astro.props;
+
+const weekLabel = (n: number) => `WEEK ${String(n).padStart(2, "0")}`;
+
+const cardBase =
+  "group flex flex-col gap-1 rounded-lg border border-grid bg-term-panel px-4 py-3 transition-colors hover:border-ink-faint";
+---
+
+{
+  (prev || next) && (
+    <nav
+      class:list={["grid gap-3 sm:grid-cols-2", className]}
+      aria-label="Previous and next task"
+    >
+      {prev ? (
+        <a href={prev.href} rel="prev" class={`${cardBase} sm:items-start`}>
+          <span class="text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase">
+            <span class="text-acid" aria-hidden="true">
+              &larr;
+            </span>{" "}
+            prev · {weekLabel(prev.weekNumber)}
+          </span>
+          <span class="truncate font-bold text-ink group-hover:text-acid">
+            {prev.title}
+          </span>
+        </a>
+      ) : (
+        <span aria-hidden="true" class="hidden sm:block" />
+      )}
+
+      {next ? (
+        <a
+          href={next.href}
+          rel="next"
+          class={`${cardBase} text-right sm:items-end`}
+        >
+          <span class="text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase">
+            next · {weekLabel(next.weekNumber)}{" "}
+            <span class="text-acid" aria-hidden="true">
+              &rarr;
+            </span>
+          </span>
+          <span class="truncate font-bold text-ink group-hover:text-acid">
+            {next.title}
+          </span>
+        </a>
+      ) : (
+        <span aria-hidden="true" class="hidden sm:block" />
+      )}
+    </nav>
+  )
+}

@@ -1,0 +1,112 @@
+---
+import Layout from "../layouts/Layout.astro";
+import StatCard from "../components/StatCard.astro";
+import AwardCard from "../components/AwardCard.astro";
+import { getCompetitionStats, getAwards } from "../data/queries";
+
+const stats = getCompetitionStats();
+const awards = getAwards();
+
+const btnPrimary =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-acid bg-acid/10 px-5 py-2.5 text-sm font-bold tracking-widest text-acid transition-colors hover:bg-acid hover:text-term-bg focus-visible:outline-none";
+---
+
+<Layout title="Stats & Awards // EAYL TASKMASTER">
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Header -->
+    <header class="mb-10">
+      <p
+        class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        cat ~/stats.md
+      </p>
+      <h1
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink text-glow sm:text-6xl"
+      >
+        Stats&nbsp;&amp;&nbsp;Awards
+      </h1>
+      <p class="mt-3 max-w-xl text-sm text-ink-dim">
+        The numbers behind the chaos. Records, superlatives, and the odd
+        bragging right — handed out by the Taskmaster's spreadsheet.
+      </p>
+    </header>
+
+    <!-- Competition stats -->
+    <section>
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        stats --summary
+      </h2>
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          value={stats.totalPlayers}
+          label="Players"
+          command="count players"
+          accent="acid"
+        />
+        <StatCard
+          value={stats.tasksCompleted}
+          label="Tasks completed"
+          command="count tasks --done"
+          accent="magenta"
+        />
+        <StatCard
+          value={stats.pointsAwarded}
+          label="Points awarded"
+          command="sum points"
+          accent="cyan"
+        />
+        <StatCard
+          value={stats.differentWinners}
+          label="Different winners"
+          command="uniq winners"
+          accent="amber"
+        />
+      </div>
+    </section>
+
+    <!-- Hall of fame -->
+    <section class="mt-14">
+      <div class="mb-4 flex items-end justify-between gap-4">
+        <h2
+          class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+        >
+          awards --hall-of-fame
+        </h2>
+        <span class="text-[11px] text-ink-faint">
+          {awards.length}
+          {awards.length === 1 ? "award" : "awards"}
+        </span>
+      </div>
+
+      {
+        awards.length > 0 ? (
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+            {awards.map((award) => (
+              <AwardCard award={award} />
+            ))}
+          </div>
+        ) : (
+          <div class="rounded-lg border border-grid bg-term-panel p-10 text-center">
+            <p class="text-sm text-ink-dim">
+              <span class="text-acid">&gt;</span> no awards yet — they unlock
+              once the first results are in.
+            </p>
+          </div>
+        )
+      }
+    </section>
+
+    <!-- CTA -->
+    <section class="mt-14 flex flex-wrap items-center gap-3">
+      <a href="/leaderboard" class={btnPrimary}>VIEW LEADERBOARD</a>
+      <a
+        href="/compare"
+        class="inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink"
+      >
+        COMPARE PLAYERS
+      </a>
+    </section>
+  </div>
+</Layout>

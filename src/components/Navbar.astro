@@ -5,6 +5,7 @@ const links = [
   { href: "/tasks", label: "tasks" },
   { href: "/leaderboard", label: "leaderboard" },
   { href: "/compare", label: "compare" },
+  { href: "/stats", label: "stats" },
   { href: "/players", label: "players" },
 ];
 
@@ -69,6 +70,21 @@ const isActive = (href: string) =>
           </li>
         ))
       }
+      <li>
+        <button
+          type="button"
+          data-command-palette-trigger
+          aria-keyshortcuts="Meta+K Control+K"
+          class="ml-2 inline-flex items-center gap-2 rounded border border-grid px-2.5 py-1.5 text-xs text-ink-dim transition-colors hover:border-ink-faint hover:text-ink"
+        >
+          <span class="text-acid" aria-hidden="true">$</span>
+          <span class="tracking-wide">search</span>
+          <kbd
+            class="rounded border border-grid bg-term-bg px-1.5 py-0.5 text-[10px] tracking-widest text-ink-faint"
+            >⌘K</kbd
+          >
+        </button>
+      </li>
     </ul>
 
     <!-- Mobile toggle -->
@@ -90,6 +106,20 @@ const isActive = (href: string) =>
     class="hidden border-t border-grid bg-term-panel md:hidden"
   >
     <ul class="mx-auto max-w-6xl px-4 py-2 sm:px-6">
+      <li>
+        <button
+          type="button"
+          data-command-palette-trigger
+          class="flex w-full items-center gap-2 border-b border-grid-soft py-3 text-left text-sm tracking-wide text-ink-dim"
+        >
+          <span class="text-acid">$</span>
+          search
+          <kbd
+            class="ml-auto rounded border border-grid bg-term-bg px-1.5 py-0.5 text-[10px] tracking-widest text-ink-faint"
+            >⌘K</kbd
+          >
+        </button>
+      </li>
       {
         links.map((link) => (
           <li>
