@@ -1,0 +1,36 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import ComparisonView from "../../components/ComparisonView.astro";
+import { players } from "../../data/players";
+import { getTopPlayers, getPlayerComparison } from "../../data/queries";
+
+// Default view compares the top two players on the leaderboard.
+const [first, second] = getTopPlayers(2);
+const comparison = getPlayerComparison(first.player.id, second.player.id)!;
+
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
+---
+
+<Layout title="Head to Head // EAYL TASKMASTER">
+  <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <a href="/leaderboard" class={btnGhost}>&larr; LEADERBOARD</a>
+
+    <header class="mt-6 mb-8">
+      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        diff --players
+      </p>
+      <h1
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink text-glow sm:text-6xl"
+      >
+        Head&nbsp;to&nbsp;Head
+      </h1>
+      <p class="mt-3 max-w-xl text-sm text-ink-dim">
+        Two players enter. The stats don't lie. Pick any pair to see who's
+        really winning the academy.
+      </p>
+    </header>
+
+    <ComparisonView comparison={comparison} players={players} />
+  </div>
+</Layout>

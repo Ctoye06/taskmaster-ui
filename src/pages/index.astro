@@ -1,11 +1,278 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
+import TerminalWindow from "../components/TerminalWindow.astro";
+import TaskStatusBadge from "../components/TaskStatusBadge.astro";
+import Countdown from "../components/Countdown.astro";
+import LeaderboardTable from "../components/LeaderboardTable.astro";
+import ScoreBadge from "../components/ScoreBadge.astro";
+import StatCard from "../components/StatCard.astro";
+import { getCurrentTask } from "../data/tasks";
+import {
+  getTopPlayers,
+  getRecentResults,
+  getCompetitionStats,
+} from "../data/queries";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const currentTask = getCurrentTask();
+const topPlayers = getTopPlayers(5);
+const recentResults = getRecentResults(3);
+const stats = getCompetitionStats();
+
+const dayFmt = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "2-digit",
+  month: "short",
+});
+const timeFmt = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: true,
+});
+
+const formatStamp = (iso: string) => {
+  const d = new Date(iso);
+  return `${dayFmt.format(d)} · ${timeFmt.format(d)}`;
+};
+const formatDay = (iso: string) => dayFmt.format(new Date(iso));
+
+const weekLabel = (n: number) => `WEEK ${String(n).padStart(2, "0")}`;
+
+const btnPrimary =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-acid bg-acid/10 px-5 py-2.5 text-sm font-bold tracking-widest text-acid transition-colors hover:bg-acid hover:text-term-bg focus-visible:outline-none";
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
 ---
 
 <Layout>
-	<Welcome />
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- ============================ HERO ============================ -->
+    <section class="relative">
+      <div class="mb-6 max-w-xl">
+        <div
+          class="rounded-lg border border-grid bg-term-panel/70 p-4 text-sm leading-relaxed"
+        >
+          <p class="text-ink-dim">
+            <span class="text-acid">$</span> ./taskmaster --launch
+          </p>
+          <p class="mt-1 text-ink-faint">
+            <span class="text-cyan">&gt;</span> initialising competition...
+          </p>
+          <p class="text-ink-faint">
+            <span class="text-cyan">&gt;</span> players loaded:
+            <span class="text-ink">25</span>
+          </p>
+          <p class="text-ink-faint">
+            <span class="text-cyan">&gt;</span> weeks scheduled:
+            <span class="text-ink">16</span>
+          </p>
+          <p class="text-ink-faint">
+            <span class="text-cyan">&gt;</span> status:
+            <span class="text-amber">IN&nbsp;PROGRESS</span><span class="caret"
+            ></span>
+          </p>
+        </div>
+      </div>
+
+      <h1
+        class="text-5xl font-extrabold leading-[0.95] tracking-tight sm:text-7xl lg:text-8xl"
+      >
+        <span class="block text-ink">EAYL</span>
+        <span class="block text-acid text-glow">TASKMASTER</span>
+      </h1>
+
+      <div
+        class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xl font-bold sm:text-2xl"
+      >
+        <span><span class="text-magenta">16</span> weeks.</span>
+        <span><span class="text-magenta">25</span> players.</span>
+        <span><span class="text-magenta">One</span> winner.</span>
+      </div>
+
+      <p class="mt-4 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base">
+        <span class="text-acid">//</span> Think creatively. Complete the task. Beat
+        your competitors.
+      </p>
+
+      <div class="mt-7 flex flex-wrap gap-3">
+        <a href="#current-task" class={btnPrimary}>&gt; VIEW CURRENT TASK</a>
+        <a href="/leaderboard" class={btnGhost}>LEADERBOARD</a>
+      </div>
+    </section>
+
+    <!-- ======================= CURRENT TASK ======================= -->
+    {
+      currentTask && (
+        <section id="current-task" class="mt-14 scroll-mt-24">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            taskmaster --current
+          </h2>
+
+          <TerminalWindow
+            title={`~/tasks/${currentTask.id}.md`}
+            meta={weekLabel(currentTask.weekNumber)}
+          >
+            <div class="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+              <div>
+                <div class="flex items-center gap-3">
+                  <span class="text-sm font-bold tracking-[0.3em] text-magenta">
+                    {weekLabel(currentTask.weekNumber)}
+                  </span>
+                  <TaskStatusBadge status={currentTask.status} />
+                </div>
+
+                <h3 class="mt-3 text-3xl font-extrabold leading-tight text-ink text-glow sm:text-5xl">
+                  {currentTask.title}
+                </h3>
+
+                <p class="mt-4 max-w-prose text-sm leading-relaxed text-ink-dim sm:text-base">
+                  {currentTask.description}
+                </p>
+
+                <dl class="mt-6 grid grid-cols-2 gap-4 text-sm">
+                  <div class="rounded-md border border-grid bg-term-bg/50 p-3">
+                    <dt class="text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+                      Released
+                    </dt>
+                    <dd class="mt-1 font-semibold text-acid">
+                      {formatStamp(currentTask.releaseDate)}
+                    </dd>
+                  </div>
+                  <div class="rounded-md border border-grid bg-term-bg/50 p-3">
+                    <dt class="text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+                      Deadline
+                    </dt>
+                    <dd class="mt-1 font-semibold text-amber">
+                      {formatStamp(currentTask.deadline)}
+                    </dd>
+                  </div>
+                </dl>
+
+                <a
+                  href={`/tasks/${currentTask.id}`}
+                  class={`${btnPrimary} mt-6`}
+                >
+                  [ VIEW TASK ]
+                </a>
+              </div>
+
+              <div class="flex flex-col justify-center rounded-lg border border-grid bg-term-bg/40 p-5">
+                <p class="mb-3 text-center text-[10px] tracking-[0.3em] text-ink-faint uppercase">
+                  time remaining
+                </p>
+                <Countdown deadline={currentTask.deadline} />
+                <p class="mt-4 text-center text-[11px] text-ink-faint">
+                  <span class="text-acid">$</span> submit before the clock hits
+                  zero
+                </p>
+              </div>
+            </div>
+          </TerminalWindow>
+        </section>
+      )
+    }
+
+    <!-- ============== LEADERBOARD + RECENT RESULTS ============== -->
+    <div class="mt-14 grid gap-8 lg:grid-cols-2">
+      <!-- Current leaderboard -->
+      <section>
+        <div class="mb-4 flex items-end justify-between gap-4">
+          <h2
+            class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+          >
+            leaderboard --top 5
+          </h2>
+          <a
+            href="/leaderboard"
+            class="text-xs font-bold tracking-widest text-cyan hover:text-ink"
+            >VIEW FULL &rarr;</a
+          >
+        </div>
+
+        <LeaderboardTable rows={topPlayers} />
+      </section>
+
+      <!-- Recent results -->
+      <section>
+        <div class="mb-4 flex items-end justify-between gap-4">
+          <h2
+            class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+          >
+            results --recent
+          </h2>
+          <a
+            href="/tasks"
+            class="text-xs font-bold tracking-widest text-cyan hover:text-ink"
+            >ALL TASKS &rarr;</a
+          >
+        </div>
+
+        <ul class="flex flex-col gap-2">
+          {
+            recentResults.map((result) => (
+              <li>
+                <a
+                  href={`/tasks/${result.task.id}`}
+                  class="group flex items-center gap-3 rounded-lg border border-grid bg-term-panel px-3 py-3 transition-colors hover:border-ink-faint sm:gap-4 sm:px-4"
+                >
+                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-xs font-extrabold text-ink-faint tabular-nums">
+                    {String(result.task.weekNumber).padStart(2, "0")}
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-bold text-ink group-hover:text-acid">
+                      {result.task.title}
+                    </span>
+                    <span class="mt-0.5 block text-[11px] text-ink-faint">
+                      🏆 {result.winner.name} &middot;{" "}
+                      {formatDay(result.completionDate)}
+                    </span>
+                  </span>
+                  <ScoreBadge
+                    points={result.winningScore}
+                    position={1}
+                    class="shrink-0"
+                  />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+    </div>
+
+    <!-- ===================== COMPETITION STATS ===================== -->
+    <section class="mt-14">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        stats --summary
+      </h2>
+
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          value={stats.totalPlayers}
+          label="Players competing"
+          command="count players"
+          accent="acid"
+        />
+        <StatCard
+          value={stats.tasksCompleted}
+          label="Tasks completed"
+          command="count tasks --done"
+          accent="cyan"
+        />
+        <StatCard
+          value={stats.pointsAwarded}
+          label="Points awarded"
+          command="sum scores"
+          accent="magenta"
+        />
+        <StatCard
+          value={stats.differentWinners}
+          label="Different winners"
+          command="uniq winners"
+          accent="amber"
+        />
+      </div>
+    </section>
+  </div>
 </Layout>

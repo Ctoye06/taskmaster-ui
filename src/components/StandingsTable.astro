@@ -1,0 +1,147 @@
+---
+import type { LeaderboardRow } from "../types";
+import { getPlayerInitials } from "../data/queries";
+
+interface Props {
+  rows: LeaderboardRow[];
+  class?: string;
+}
+
+const { rows, class: className = "" } = Astro.props;
+
+const medal = (rank: number) =>
+  rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+
+// Tint the podium rows so the top three stand out in the dense table.
+const rowAccent = (rank: number) => {
+  if (rank === 1) return "bg-amber/5";
+  if (rank === 2) return "bg-ink/5";
+  if (rank === 3) return "bg-acid/5";
+  return "";
+};
+
+// Colour a single recent finishing position in the form guide.
+const formClasses = (position: number) => {
+  if (position === 1) return "border-acid-dim bg-acid/10 text-acid";
+  if (position <= 3) return "border-cyan/40 bg-cyan/5 text-cyan";
+  return "border-grid bg-term-bg text-ink-faint";
+};
+
+const th =
+  "px-3 py-2.5 text-left text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase";
+---
+
+<div class:list={["overflow-x-auto", className]}>
+  <table class="w-full border-collapse text-sm">
+    <caption class="sr-only">Full competition standings</caption>
+    <thead>
+      <tr class="border-b border-grid">
+        <th scope="col" class:list={[th, "w-12 text-center"]}>#</th>
+        <th scope="col" class={th}>Player</th>
+        <th scope="col" class:list={[th, "hidden text-center sm:table-cell"]}>
+          Played
+        </th>
+        <th scope="col" class:list={[th, "hidden text-center sm:table-cell"]}>
+          Wins
+        </th>
+        <th scope="col" class:list={[th, "hidden text-center lg:table-cell"]}>
+          Avg&nbsp;pos
+        </th>
+        <th scope="col" class:list={[th, "hidden lg:table-cell"]}>Form</th>
+        <th scope="col" class:list={[th, "text-right"]}>Pts</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((row) => (
+          <tr
+            class:list={[
+              "group border-b border-grid-soft transition-colors last:border-b-0 hover:bg-term-panel-2/60",
+              rowAccent(row.rank),
+            ]}
+          >
+            <td class="px-3 py-3 text-center">
+              {medal(row.rank) ? (
+                <span class="text-lg" aria-hidden="true">
+                  {medal(row.rank)}
+                </span>
+              ) : (
+                <span class="text-sm font-bold tabular-nums text-ink-faint">
+                  {String(row.rank).padStart(2, "0")}
+                </span>
+              )}
+              <span class="sr-only">Rank {row.rank}</span>
+            </td>
+
+            <td class="px-3 py-3">
+              <a
+                href={`/players/${row.player.id}`}
+                class="flex items-center gap-3"
+              >
+                <span
+                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-[11px] font-bold text-ink-dim"
+                  aria-hidden="true"
+                >
+                  {getPlayerInitials(row.player)}
+                </span>
+                <span class="min-w-0">
+                  <span class="block truncate font-semibold text-ink group-hover:text-acid">
+                    {row.player.name}
+                  </span>
+                  <span class="block text-[11px] text-ink-faint sm:hidden">
+                    {row.wins} {row.wins === 1 ? "win" : "wins"} &middot;{" "}
+                    {row.tasksCompleted} played
+                  </span>
+                </span>
+              </a>
+            </td>
+
+            <td class="hidden px-3 py-3 text-center tabular-nums text-ink-dim sm:table-cell">
+              {row.tasksCompleted}
+            </td>
+
+            <td class="hidden px-3 py-3 text-center tabular-nums sm:table-cell">
+              {row.wins > 0 ? (
+                <span class="font-bold text-acid">{row.wins}</span>
+              ) : (
+                <span class="text-ink-faint">0</span>
+              )}
+            </td>
+
+            <td class="hidden px-3 py-3 text-center tabular-nums text-ink-dim lg:table-cell">
+              {row.averagePosition > 0
+                ? row.averagePosition.toFixed(1)
+                : "—"}
+            </td>
+
+            <td class="hidden px-3 py-3 lg:table-cell">
+              {row.form.length > 0 ? (
+                <span class="flex items-center gap-1">
+                  {row.form.map((position) => (
+                    <span
+                      class:list={[
+                        "flex h-5 w-5 items-center justify-center rounded border text-[11px] font-bold tabular-nums",
+                        formClasses(position),
+                      ]}
+                      title={`Position ${position}`}
+                    >
+                      {position}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span class="text-ink-faint">—</span>
+              )}
+            </td>
+
+            <td class="px-3 py-3 text-right">
+              <span class="text-base font-extrabold tabular-nums text-acid">
+                {row.points}
+              </span>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,78 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PlayerCard from "../../components/PlayerCard.astro";
+import StatCard from "../../components/StatCard.astro";
+import { getLeaderboard, getCompetitionStats } from "../../data/queries";
+
+const roster = getLeaderboard();
+const stats = getCompetitionStats();
+
+const unscored = roster.filter((row) => row.tasksCompleted === 0).length;
+---
+
+<Layout title="Players // EAYL TASKMASTER">
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Page header -->
+    <header>
+      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        ls ~/players
+      </p>
+      <h1
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-6xl"
+      >
+        THE <span class="text-acid text-glow">ROSTER</span>
+      </h1>
+      <p class="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base">
+        <span class="text-acid">//</span> {stats.totalPlayers} players, one
+        trophy. Ordered by current standing. Tap a player to inspect their
+        task-by-task record.
+      </p>
+    </header>
+
+    <!-- Summary stats -->
+    <section class="mt-8">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          value={stats.totalPlayers}
+          label="Players competing"
+          command="count players"
+          accent="acid"
+        />
+        <StatCard
+          value={stats.differentWinners}
+          label="Have won a task"
+          command="uniq winners"
+          accent="magenta"
+        />
+        <StatCard
+          value={stats.tasksCompleted}
+          label="Tasks scored"
+          command="count tasks --done"
+          accent="cyan"
+        />
+        <StatCard
+          value={unscored}
+          label="Yet to score"
+          command="filter --zero"
+          accent="amber"
+        />
+      </div>
+    </section>
+
+    <!-- Roster grid -->
+    <section class="mt-12">
+      <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        players --all
+      </h2>
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+        {
+          roster.map((row) => (
+            <li>
+              <PlayerCard row={row} class="h-full" />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+</Layout>

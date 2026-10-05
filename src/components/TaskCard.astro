@@ -1,0 +1,125 @@
+---
+import type { TaskSummary } from "../types";
+import TaskStatusBadge from "./TaskStatusBadge.astro";
+import ScoreBadge from "./ScoreBadge.astro";
+
+interface Props {
+  summary: TaskSummary;
+  class?: string;
+}
+
+const { summary, class: className = "" } = Astro.props;
+const { task, winner, winningScore } = summary;
+
+const status = task.status;
+const weekLabel = `WEEK ${String(task.weekNumber).padStart(2, "0")}`;
+
+// Live tasks get extra emphasis; locked (upcoming) tasks read as dimmed.
+const frameByStatus = {
+  live: "border-amber/50 bg-amber/5 ring-1 ring-amber/20 shadow-[0_0_40px_-18px_rgba(255,180,84,0.5)]",
+  completed: "border-grid bg-term-panel hover:border-ink-faint",
+  upcoming: "border-grid-soft bg-term-panel/50",
+} as const;
+
+const numberColor = {
+  live: "text-amber",
+  completed: "text-acid",
+  upcoming: "text-ink-faint",
+} as const;
+
+const dayFmt = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "short",
+});
+const releaseLabel = dayFmt.format(new Date(task.releaseDate));
+---
+
+<article
+  class:list={[
+    "group relative flex flex-col overflow-hidden rounded-xl border p-5 transition-colors",
+    frameByStatus[status],
+    className,
+  ]}
+>
+  <!-- Large terminal-style week number watermark -->
+  <span
+    class:list={[
+      "pointer-events-none absolute -top-3 right-3 text-6xl font-extrabold tabular-nums opacity-10 select-none",
+      numberColor[status],
+    ]}
+    aria-hidden="true"
+  >
+    {String(task.weekNumber).padStart(2, "0")}
+  </span>
+
+  <div class="flex items-center justify-between gap-3">
+    <span
+      class:list={[
+        "text-xs font-bold tracking-[0.3em]",
+        numberColor[status],
+      ]}
+    >
+      {weekLabel}
+    </span>
+    <TaskStatusBadge status={status} />
+  </div>
+
+  {
+    status === "upcoming" ? (
+      <>
+        <h3 class="mt-3 text-xl font-extrabold text-ink-dim">
+          {task.title}
+        </h3>
+        <p class="mt-2 flex-1 text-sm text-ink-faint">
+          <span class="text-acid">$</span> cat brief.md &rarr;{" "}
+          <span class="text-ink-faint">permission denied</span>
+        </p>
+        <p class="mt-4 text-[11px] tracking-widest text-ink-faint uppercase">
+          Unlocks {releaseLabel}
+        </p>
+      </>
+    ) : (
+      <>
+        <h3
+          class:list={[
+            "mt-3 text-xl font-extrabold text-ink",
+            status === "live" && "text-glow",
+          ]}
+        >
+          {task.title}
+        </h3>
+        <p class="mt-2 flex-1 text-sm leading-relaxed text-ink-dim">
+          {task.description}
+        </p>
+
+        {status === "completed" && winner && (
+          <div class="mt-4 flex items-center justify-between gap-3 border-t border-grid pt-4">
+            <div>
+              <p class="text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+                Winner
+              </p>
+              <p class="mt-0.5 text-sm font-bold text-ink">
+                🏆 {winner.name}
+              </p>
+            </div>
+            {winningScore !== undefined && (
+              <ScoreBadge points={winningScore} position={1} />
+            )}
+          </div>
+        )}
+
+        <a
+          href={`/tasks/${task.id}`}
+          class:list={[
+            "mt-5 inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-xs font-bold tracking-widest transition-colors",
+            status === "live"
+              ? "border-amber bg-amber/10 text-amber hover:bg-amber hover:text-term-bg"
+              : "border-grid text-ink-dim hover:border-acid hover:text-acid",
+          ]}
+        >
+          [ VIEW TASK ]
+        </a>
+      </>
+    )
+  }
+</article>

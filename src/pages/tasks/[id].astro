@@ -1,0 +1,274 @@
+---
+import type { GetStaticPaths } from "astro";
+import Layout from "../../layouts/Layout.astro";
+import TerminalWindow from "../../components/TerminalWindow.astro";
+import TaskStatusBadge from "../../components/TaskStatusBadge.astro";
+import Countdown from "../../components/Countdown.astro";
+import ScoreBadge from "../../components/ScoreBadge.astro";
+import { tasks } from "../../data/tasks";
+import {
+  getTaskSummary,
+  getTaskResults,
+  getPlayerInitials,
+} from "../../data/queries";
+
+export const getStaticPaths = (() => {
+  return tasks.map((task) => ({ params: { id: task.id } }));
+}) satisfies GetStaticPaths;
+
+const { id } = Astro.params;
+const summary = getTaskSummary(id!);
+
+// Unknown id → 404 rather than a broken page.
+if (!summary) {
+  return Astro.redirect("/404");
+}
+
+const { task, winner, winningScore } = summary;
+const results = task.status === "completed" ? getTaskResults(task.id) : [];
+
+const weekLabel = `WEEK ${String(task.weekNumber).padStart(2, "0")}`;
+const isLocked = task.status === "upcoming";
+
+const dayFmt = new Intl.DateTimeFormat("en-GB", {
+  weekday: "long",
+  day: "2-digit",
+  month: "long",
+});
+const timeFmt = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: true,
+});
+const formatStamp = (iso: string) => {
+  const d = new Date(iso);
+  return `${dayFmt.format(d)}, ${timeFmt.format(d)}`;
+};
+
+// Standard competition rules shown on every brief (presentational content,
+// identical for all tasks — not per-task entity data).
+const rules = [
+  "One submission per player, before the deadline.",
+  "No external help unless the brief explicitly allows it.",
+  "Points are awarded by the Taskmaster. The Taskmaster's decision is final.",
+  "Creativity is rewarded. Literalism is... noted.",
+];
+
+const medal = (position: number) =>
+  position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
+
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
+---
+
+<Layout title={`${weekLabel}: ${task.title} // EAYL TASKMASTER`}>
+  <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Back link -->
+    <a href="/tasks" class={btnGhost}>&larr; ALL TASKS</a>
+
+    <!-- Header -->
+    <header class="mt-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="text-sm font-bold tracking-[0.3em] text-magenta">
+          {weekLabel}
+        </span>
+        <TaskStatusBadge status={task.status} />
+      </div>
+      <h1
+        class="mt-3 text-4xl font-extrabold leading-tight text-ink text-glow sm:text-6xl"
+      >
+        {task.title}
+      </h1>
+    </header>
+
+    <!-- The brief -->
+    <section class="mt-8">
+      <TerminalWindow title={`~/tasks/${task.id}.brief`} meta={weekLabel}>
+        {
+          isLocked ? (
+            <div class="py-6 text-center">
+              <p class="text-5xl" aria-hidden="true">
+                🔒
+              </p>
+              <p class="mt-4 text-sm text-ink-dim">
+                <span class="text-acid">$</span> cat {task.id}.brief
+              </p>
+              <p class="mt-1 text-sm text-danger">
+                permission denied: brief is classified
+              </p>
+              <p class="mt-4 text-xs tracking-widest text-ink-faint uppercase">
+                Unlocks {formatStamp(task.releaseDate)}
+              </p>
+            </div>
+          ) : (
+            <div>
+              {task.brief && (
+                <blockquote class="border-l-2 border-acid pl-4 text-lg leading-relaxed text-ink sm:text-xl">
+                  {task.brief}
+                </blockquote>
+              )}
+              <p class="mt-6 text-sm leading-relaxed text-ink-dim">
+                {task.description}
+              </p>
+              {task.status === "live" && (
+                <p class="mt-6 font-bold tracking-widest text-acid">
+                  &gt; Your time starts now<span class="caret" />
+                </p>
+              )}
+            </div>
+          )
+        }
+      </TerminalWindow>
+    </section>
+
+    <!-- Schedule + countdown -->
+    <section class="mt-8 grid gap-4 sm:grid-cols-2">
+      <div class="rounded-lg border border-grid bg-term-panel p-5">
+        <p class="text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+          Released
+        </p>
+        <p class="mt-1 font-semibold text-acid">{formatStamp(task.releaseDate)}</p>
+        <p class="mt-4 text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+          Deadline
+        </p>
+        <p class="mt-1 font-semibold text-amber">{formatStamp(task.deadline)}</p>
+      </div>
+
+      <div
+        class="flex flex-col justify-center rounded-lg border border-grid bg-term-bg/50 p-5"
+      >
+        <p
+          class="mb-3 text-center text-[10px] tracking-[0.3em] text-ink-faint uppercase"
+        >
+          {task.status === "completed" ? "task closed" : "time remaining"}
+        </p>
+        {
+          task.status === "completed" ? (
+            <p class="text-center text-2xl font-extrabold tracking-widest text-acid">
+              &gt; COMPLETE
+            </p>
+          ) : (
+            <Countdown
+              deadline={task.status === "live" ? task.deadline : task.releaseDate}
+            />
+          )
+        }
+      </div>
+    </section>
+
+    <!-- Rules -->
+    {
+      !isLocked && (
+        <section class="mt-8">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            rules --list
+          </h2>
+          <ul class="space-y-2">
+            {rules.map((rule, i) => (
+              <li class="flex gap-3 rounded-md border border-grid bg-term-panel px-4 py-3 text-sm text-ink-dim">
+                <span class="font-bold text-acid tabular-nums">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span>{rule}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    <!-- Results (completed only) -->
+    {
+      task.status === "completed" && winner && (
+        <section class="mt-10">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            results --final
+          </h2>
+
+          {/* Winner spotlight */}
+          <div class="mb-6 overflow-hidden rounded-xl border border-amber/40 bg-amber/5 p-6 text-center ring-1 ring-amber/20">
+            <p class="text-[10px] tracking-[0.4em] text-amber uppercase">
+              Winner
+            </p>
+            <p class="mt-2 text-4xl" aria-hidden="true">
+              🥇
+            </p>
+            <a
+              href={`/players/${winner.id}`}
+              class="mt-1 inline-block text-3xl font-extrabold text-ink text-glow hover:text-acid"
+            >
+              {winner.name}
+            </a>
+            {winningScore !== undefined && (
+              <p class="mt-2 text-sm font-bold tracking-widest text-amber">
+                {winningScore} POINTS
+              </p>
+            )}
+          </div>
+
+          {/* Full results table */}
+          <div class="overflow-hidden rounded-lg border border-grid">
+            <table class="w-full text-left text-sm">
+              <caption class="sr-only">
+                Final results for {weekLabel}: {task.title}
+              </caption>
+              <thead>
+                <tr class="border-b border-grid bg-term-bg/60 text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+                  <th scope="col" class="px-4 py-3 font-semibold">
+                    Pos
+                  </th>
+                  <th scope="col" class="px-4 py-3 font-semibold">
+                    Player
+                  </th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold">
+                    Points
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.slice(0, 10).map((row) => (
+                  <tr class="border-b border-grid-soft last:border-b-0 hover:bg-term-panel/60">
+                    <td class="px-4 py-3">
+                      <span class="font-bold tabular-nums">
+                        {medal(row.position) ?? (
+                          <span class="text-ink-faint">
+                            {String(row.position).padStart(2, "0")}
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <a
+                        href={`/players/${row.player.id}`}
+                        class="group inline-flex items-center gap-3"
+                      >
+                        <span
+                          class="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-[11px] font-bold text-ink-dim"
+                          aria-hidden="true"
+                        >
+                          {getPlayerInitials(row.player)}
+                        </span>
+                        <span class="font-semibold text-ink group-hover:text-acid">
+                          {row.player.name}
+                        </span>
+                      </a>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <ScoreBadge points={row.points} position={row.position} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {results.length > 10 && (
+            <p class="mt-3 text-center text-[11px] text-ink-faint">
+              <span class="text-acid">$</span> showing top 10 of{" "}
+              {results.length} players
+            </p>
+          )}
+        </section>
+      )
+    }
+  </div>
+</Layout>

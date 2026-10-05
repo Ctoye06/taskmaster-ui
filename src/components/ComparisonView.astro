@@ -1,0 +1,418 @@
+---
+import type { Player, PlayerComparison } from "../types";
+import { getPlayerInitials } from "../data/queries";
+import TerminalWindow from "./TerminalWindow.astro";
+import ComparisonStatRow from "./ComparisonStatRow.astro";
+
+interface Props {
+  comparison: PlayerComparison;
+  /** Full roster, used to populate the two player pickers. */
+  players: Player[];
+}
+
+const { comparison, players } = Astro.props;
+const { a, b, tasks, headToHead } = comparison;
+
+const aInitials = getPlayerInitials(a.player);
+const bInitials = getPlayerInitials(b.player);
+
+const ordinal = (n: number) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+};
+const medal = (position: number) =>
+  position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
+const weekLabel = (n: number) => `WEEK ${String(n).padStart(2, "0")}`;
+
+const bestFinishOf = (side: "a" | "b") => {
+  const positions = tasks
+    .map((row) => (side === "a" ? row.a?.position : row.b?.position))
+    .filter((p): p is number => typeof p === "number");
+  return positions.length ? Math.min(...positions) : 0;
+};
+const aBest = bestFinishOf("a");
+const bBest = bestFinishOf("b");
+
+type Side = "a" | "b" | "tie";
+const pick = (
+  av: number,
+  bv: number,
+  dir: "high" | "low",
+  aValid = true,
+  bValid = true,
+): Side => {
+  if (!aValid && !bValid) return "tie";
+  if (!aValid) return "b";
+  if (!bValid) return "a";
+  if (av === bv) return "tie";
+  const aBetter = dir === "high" ? av > bv : av < bv;
+  return aBetter ? "a" : "b";
+};
+
+const bestDisplay = (best: number) =>
+  best > 0 ? (medal(best) ?? ordinal(best)) : "—";
+
+const metrics = [
+  {
+    label: "League rank",
+    command: "rank",
+    aDisplay: `#${a.rank}`,
+    bDisplay: `#${b.rank}`,
+    winner: pick(a.rank, b.rank, "low"),
+  },
+  {
+    label: "Total points",
+    command: "sum scores",
+    aDisplay: String(a.points),
+    bDisplay: String(b.points),
+    winner: pick(a.points, b.points, "high"),
+  },
+  {
+    label: "Task wins",
+    command: "count wins",
+    aDisplay: String(a.wins),
+    bDisplay: String(b.wins),
+    winner: pick(a.wins, b.wins, "high"),
+  },
+  {
+    label: "Tasks played",
+    command: "count tasks",
+    aDisplay: String(a.tasksCompleted),
+    bDisplay: String(b.tasksCompleted),
+    winner: pick(a.tasksCompleted, b.tasksCompleted, "high"),
+  },
+  {
+    label: "Average finish",
+    command: "avg position",
+    aDisplay: a.tasksCompleted > 0 ? a.averagePosition.toFixed(1) : "—",
+    bDisplay: b.tasksCompleted > 0 ? b.averagePosition.toFixed(1) : "—",
+    winner: pick(
+      a.averagePosition,
+      b.averagePosition,
+      "low",
+      a.tasksCompleted > 0,
+      b.tasksCompleted > 0,
+    ),
+  },
+  {
+    label: "Best finish",
+    command: "min position",
+    aDisplay: bestDisplay(aBest),
+    bDisplay: bestDisplay(bBest),
+    winner: pick(aBest, bBest, "low", aBest > 0, bBest > 0),
+  },
+] as const;
+
+// Whoever sits higher on the league table is "ahead" overall.
+const overallLeader: Side =
+  a.rank === b.rank ? "tie" : a.rank < b.rank ? "a" : "b";
+
+const headerRing = (side: "a" | "b") =>
+  overallLeader === side
+    ? "border-acid/50 bg-acid/5 ring-1 ring-acid/20"
+    : "border-grid bg-term-panel/60";
+
+const selectClass =
+  "w-full rounded-md border border-grid bg-term-panel px-3 py-2.5 text-sm text-ink transition-colors focus-visible:border-acid focus-visible:outline-none";
+
+const cellResult = (result?: { position: number; points: number }) => result;
+---
+
+<!-- Player pickers -->
+<form
+  class="rounded-lg border border-grid bg-term-panel/60 p-4 sm:p-5"
+  aria-label="Choose two players to compare"
+>
+  <p class="prompt mb-3 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+    compare --players
+  </p>
+  <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_1fr]">
+    <div>
+      <label
+        for="picker-a"
+        class="mb-1 block text-[10px] tracking-[0.2em] text-ink-faint uppercase"
+      >
+        player a
+      </label>
+      <select id="picker-a" class={selectClass} autocomplete="off">
+        {
+          players.map((player) => (
+            <option value={player.id} selected={player.id === a.player.id}>
+              {player.name}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    <button
+      type="button"
+      id="swap-players"
+      class="mb-0.5 inline-flex items-center justify-center gap-2 self-center rounded-md border border-grid px-4 py-2.5 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-acid hover:text-acid sm:mt-5"
+      aria-label="Swap the two players"
+    >
+      <span aria-hidden="true">⇄</span> SWAP
+    </button>
+
+    <div>
+      <label
+        for="picker-b"
+        class="mb-1 block text-[10px] tracking-[0.2em] text-ink-faint uppercase"
+      >
+        player b
+      </label>
+      <select id="picker-b" class={selectClass} autocomplete="off">
+        {
+          players.map((player) => (
+            <option value={player.id} selected={player.id === b.player.id}>
+              {player.name}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+  </div>
+</form>
+
+<!-- Versus header -->
+<section class="mt-6 grid grid-cols-[1fr_auto_1fr] items-stretch gap-3 sm:gap-4">
+  <a
+    href={`/players/${a.player.id}`}
+    class:list={[
+      "group flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors hover:border-ink-faint sm:p-5",
+      headerRing("a"),
+    ]}
+  >
+    <span
+      class="flex h-14 w-14 items-center justify-center rounded-lg border border-grid bg-term-panel text-lg font-extrabold text-ink-dim sm:h-16 sm:w-16 sm:text-xl"
+      aria-hidden="true">{aInitials}</span
+    >
+    <span
+      class="truncate text-lg font-extrabold text-ink group-hover:text-acid sm:text-2xl"
+      >{a.player.name}</span
+    >
+    <span class="text-xs font-bold tracking-widest text-magenta"
+      >RANK #{a.rank}</span
+    >
+  </a>
+
+  <div class="flex flex-col items-center justify-center gap-2 px-1">
+    <span
+      class="text-xl font-extrabold tracking-widest text-ink-faint sm:text-3xl"
+      aria-hidden="true">VS</span
+    >
+    <span
+      class="rounded-md border border-grid bg-term-bg px-2.5 py-1 text-sm font-extrabold tabular-nums text-ink sm:text-base"
+    >
+      <span class={overallLeader === "a" ? "text-acid" : "text-ink-dim"}
+        >{headToHead.aWins}</span
+      >
+      <span class="text-ink-faint">–</span>
+      <span class={overallLeader === "b" ? "text-acid" : "text-ink-dim"}
+        >{headToHead.bWins}</span
+      >
+    </span>
+    <span class="text-center text-[10px] tracking-wide text-ink-faint">
+      {
+        headToHead.shared > 0
+          ? `${headToHead.shared} shared ${headToHead.shared === 1 ? "task" : "tasks"}${headToHead.ties > 0 ? ` · ${headToHead.ties} tied` : ""}`
+          : "no shared tasks yet"
+      }
+    </span>
+  </div>
+
+  <a
+    href={`/players/${b.player.id}`}
+    class:list={[
+      "group flex flex-col items-center gap-2 rounded-lg border p-4 text-center transition-colors hover:border-ink-faint sm:p-5",
+      headerRing("b"),
+    ]}
+  >
+    <span
+      class="flex h-14 w-14 items-center justify-center rounded-lg border border-grid bg-term-panel text-lg font-extrabold text-ink-dim sm:h-16 sm:w-16 sm:text-xl"
+      aria-hidden="true">{bInitials}</span
+    >
+    <span
+      class="truncate text-lg font-extrabold text-ink group-hover:text-acid sm:text-2xl"
+      >{b.player.name}</span
+    >
+    <span class="text-xs font-bold tracking-widest text-magenta"
+      >RANK #{b.rank}</span
+    >
+  </a>
+</section>
+
+<!-- Metric comparison -->
+<section class="mt-8">
+  <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+    diff --stats
+  </h2>
+  <TerminalWindow
+    title={`~/compare/${a.player.id}...${b.player.id}.diff`}
+    meta="head to head"
+  >
+    {
+      metrics.map((metric) => (
+        <ComparisonStatRow
+          label={metric.label}
+          command={metric.command}
+          aDisplay={metric.aDisplay}
+          bDisplay={metric.bDisplay}
+          winner={metric.winner}
+        />
+      ))
+    }
+  </TerminalWindow>
+</section>
+
+<!-- Task-by-task breakdown -->
+<section class="mt-8">
+  <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+    log --task-by-task
+  </h2>
+  <TerminalWindow
+    title={`~/compare/${a.player.id}...${b.player.id}.log`}
+    meta={`${tasks.length} ${tasks.length === 1 ? "task" : "tasks"}`}
+    bodyClass="p-0 sm:p-0"
+  >
+    {
+      tasks.length > 0 ? (
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-sm">
+            <caption class="sr-only">
+              {a.player.name} versus {b.player.name}, task by task
+            </caption>
+            <thead>
+              <tr class="border-b border-grid">
+                <th
+                  scope="col"
+                  class="px-3 py-2.5 text-left text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+                >
+                  Task
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-2.5 text-center text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+                >
+                  {a.player.name}
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-2.5 text-center text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+                >
+                  {b.player.name}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {tasks.map((row) => {
+                const ar = cellResult(row.a);
+                const br = cellResult(row.b);
+                return (
+                  <tr class="group border-b border-grid-soft transition-colors last:border-b-0 hover:bg-term-panel-2/60">
+                    <td class="px-3 py-3">
+                      <a
+                        href={`/tasks/${row.task.id}`}
+                        class="block font-semibold text-ink group-hover:text-acid"
+                      >
+                        {row.task.title}
+                      </a>
+                      <span class="text-[10px] font-bold tracking-[0.2em] text-magenta">
+                        {weekLabel(row.task.weekNumber)}
+                      </span>
+                    </td>
+                    <td
+                      class:list={[
+                        "px-3 py-3 text-center whitespace-nowrap",
+                        row.leader === "a" ? "text-acid" : "text-ink-dim",
+                      ]}
+                    >
+                      {ar ? (
+                        <span class="inline-flex items-center gap-1.5">
+                          {medal(ar.position) && (
+                            <span aria-hidden="true">{medal(ar.position)}</span>
+                          )}
+                          <span class="font-bold tabular-nums">
+                            {ordinal(ar.position)}
+                          </span>
+                          <span class="text-[11px] text-ink-faint">
+                            {ar.points} pts
+                          </span>
+                        </span>
+                      ) : (
+                        <span class="text-ink-faint">—</span>
+                      )}
+                    </td>
+                    <td
+                      class:list={[
+                        "px-3 py-3 text-center whitespace-nowrap",
+                        row.leader === "b" ? "text-acid" : "text-ink-dim",
+                      ]}
+                    >
+                      {br ? (
+                        <span class="inline-flex items-center gap-1.5">
+                          {medal(br.position) && (
+                            <span aria-hidden="true">{medal(br.position)}</span>
+                          )}
+                          <span class="font-bold tabular-nums">
+                            {ordinal(br.position)}
+                          </span>
+                          <span class="text-[11px] text-ink-faint">
+                            {br.points} pts
+                          </span>
+                        </span>
+                      ) : (
+                        <span class="text-ink-faint">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p class="px-4 py-10 text-center text-sm text-ink-dim">
+          <span class="text-acid">&gt;</span> neither player has been scored
+          yet. Check back once the results are in.
+        </p>
+      )
+    }
+  </TerminalWindow>
+</section>
+
+<script>
+  const selA = document.getElementById("picker-a") as HTMLSelectElement | null;
+  const selB = document.getElementById("picker-b") as HTMLSelectElement | null;
+  const swap = document.getElementById("swap-players");
+
+  function firstOther(select: HTMLSelectElement, exclude: string): string {
+    const option = Array.from(select.options).find((o) => o.value !== exclude);
+    return option ? option.value : exclude;
+  }
+
+  function go(aId: string, bId: string) {
+    if (aId && bId && aId !== bId) {
+      window.location.href = `/compare/${aId}/${bId}`;
+    }
+  }
+
+  selA?.addEventListener("change", () => {
+    if (!selB) return;
+    let bId = selB.value;
+    if (bId === selA.value) bId = firstOther(selB, selA.value);
+    go(selA.value, bId);
+  });
+
+  selB?.addEventListener("change", () => {
+    if (!selA) return;
+    let aId = selA.value;
+    if (aId === selB.value) aId = firstOther(selA, selB.value);
+    go(aId, selB.value);
+  });
+
+  swap?.addEventListener("click", () => {
+    if (selA && selB) go(selB.value, selA.value);
+  });
+</script>

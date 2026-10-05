@@ -1,0 +1,40 @@
+---
+interface Props {
+  /** Filename/command shown in the window title bar. */
+  title: string;
+  /** Optional right-aligned meta text in the title bar. */
+  meta?: string;
+  class?: string;
+  bodyClass?: string;
+}
+
+const { title, meta, class: className = "", bodyClass = "" } = Astro.props;
+---
+
+<section
+  class:list={[
+    "overflow-hidden rounded-xl border border-grid bg-term-panel/60 shadow-[0_0_40px_-20px_rgba(62,240,139,0.25)]",
+    className,
+  ]}
+>
+  <header
+    class="flex items-center gap-3 border-b border-grid bg-term-bg/60 px-4 py-2.5"
+  >
+    <span class="flex items-center gap-1.5" aria-hidden="true">
+      <span class="h-3 w-3 rounded-full bg-dot-red"></span>
+      <span class="h-3 w-3 rounded-full bg-dot-amber"></span>
+      <span class="h-3 w-3 rounded-full bg-dot-green"></span>
+    </span>
+    <span class="truncate text-xs text-ink-dim">{title}</span>
+    {
+      meta && (
+        <span class="ml-auto hidden truncate text-[11px] text-ink-faint sm:block">
+          {meta}
+        </span>
+      )
+    }
+  </header>
+  <div class:list={["p-4 sm:p-6", bodyClass]}>
+    <slot />
+  </div>
+</section>

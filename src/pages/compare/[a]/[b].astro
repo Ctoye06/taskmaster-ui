@@ -1,0 +1,53 @@
+---
+import type { GetStaticPaths } from "astro";
+import Layout from "../../../layouts/Layout.astro";
+import ComparisonView from "../../../components/ComparisonView.astro";
+import { players } from "../../../data/players";
+import { getPlayerComparison } from "../../../data/queries";
+
+export const getStaticPaths = (() => {
+  // Every ordered pair of distinct players, so the pickers can land on the
+  // exact left/right combination the user chose.
+  return players.flatMap((a) =>
+    players
+      .filter((b) => b.id !== a.id)
+      .map((b) => ({ params: { a: a.id, b: b.id } })),
+  );
+}) satisfies GetStaticPaths;
+
+const { a, b } = Astro.params;
+const comparison = getPlayerComparison(a!, b!);
+
+// Unknown or identical ids → 404 rather than a broken page.
+if (!comparison) {
+  return Astro.redirect("/404");
+}
+
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
+---
+
+<Layout
+  title={`${comparison.a.player.name} vs ${comparison.b.player.name} // EAYL TASKMASTER`}
+>
+  <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <a href="/leaderboard" class={btnGhost}>&larr; LEADERBOARD</a>
+
+    <header class="mt-6 mb-8">
+      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        diff --players
+      </p>
+      <h1
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink text-glow sm:text-6xl"
+      >
+        Head&nbsp;to&nbsp;Head
+      </h1>
+      <p class="mt-3 max-w-xl text-sm text-ink-dim">
+        Two players enter. The stats don't lie. Pick any pair to see who's
+        really winning the academy.
+      </p>
+    </header>
+
+    <ComparisonView comparison={comparison} players={players} />
+  </div>
+</Layout>

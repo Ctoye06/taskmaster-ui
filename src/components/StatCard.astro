@@ -1,0 +1,41 @@
+---
+interface Props {
+  /** The large numeric/string value. */
+  value: string | number;
+  /** Caption shown beneath the value. */
+  label: string;
+  /** A short "command" style line shown at the top of the card. */
+  command?: string;
+  accent?: "acid" | "magenta" | "amber" | "cyan";
+}
+
+const { value, label, command, accent = "acid" } = Astro.props;
+
+const accentText: Record<string, string> = {
+  acid: "text-acid",
+  magenta: "text-magenta",
+  amber: "text-amber",
+  cyan: "text-cyan",
+};
+---
+
+<div
+  class="group relative overflow-hidden rounded-lg border border-grid bg-term-panel p-4 transition-colors hover:border-ink-faint"
+>
+  {
+    command && (
+      <p class="mb-3 truncate text-[11px] text-ink-faint">
+        <span class="text-acid">$</span> {command}
+      </p>
+    )
+  }
+  <p
+    class:list={[
+      "text-3xl font-extrabold tabular-nums sm:text-4xl",
+      accentText[accent],
+    ]}
+  >
+    {value}
+  </p>
+  <p class="mt-1 text-xs tracking-wide text-ink-dim">{label}</p>
+</div>

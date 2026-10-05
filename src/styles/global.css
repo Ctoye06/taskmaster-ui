@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/*  Taskmaster — terminal / coding aesthetic design tokens            */
+/*  Exposed through @theme so Tailwind generates matching utilities    */
+/*  (e.g. bg-term-bg, text-acid, border-grid).                         */
+/* ------------------------------------------------------------------ */
+@theme {
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo",
+    "Consolas", monospace;
+
+  --color-term-bg: #080b10;
+  --color-term-panel: #0e141c;
+  --color-term-panel-2: #121a24;
+  --color-grid: #1d2a38;
+  --color-grid-soft: #152030;
+
+  --color-ink: #cfdae6;
+  --color-ink-dim: #8595a7;
+  --color-ink-faint: #5a6675;
+
+  --color-acid: #3ef08b; /* primary terminal green  */
+  --color-acid-dim: #1f7f4c;
+  --color-amber: #ffb454; /* warnings / live         */
+  --color-magenta: #ff6ac1; /* accents / titles        */
+  --color-cyan: #5bd6ff; /* links / info            */
+  --color-danger: #ff5f56;
+
+  --color-dot-red: #ff5f56;
+  --color-dot-amber: #ffbd2e;
+  --color-dot-green: #27c93f;
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-term-bg);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  /* Subtle CRT-style background: grid + vignette, drawn once, fixed. */
+  background-image:
+    radial-gradient(
+      ellipse at 50% -10%,
+      rgba(62, 240, 139, 0.08),
+      transparent 55%
+    ),
+    linear-gradient(var(--color-grid-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid-soft) 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Thin faux scanlines overlaid on the whole page for the CRT feel. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.015) 0px,
+    rgba(255, 255, 255, 0.015) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* ----------------------------- helpers ---------------------------- */
+
+/* Terminal command prompt marker, e.g. prefix a heading with "$ ". */
+.prompt::before {
+  content: "$ ";
+  color: var(--color-acid);
+}
+
+.text-glow {
+  text-shadow: 0 0 14px rgba(62, 240, 139, 0.45);
+}
+
+.text-glow-magenta {
+  text-shadow: 0 0 14px rgba(255, 106, 193, 0.45);
+}
+
+/* Blinking block caret used after live/dynamic text. */
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 0.6ch;
+  height: 1.05em;
+  margin-left: 0.15ch;
+  translate: 0 0.14em;
+  background: var(--color-acid);
+  animation: term-blink 1.05s steps(1) infinite;
+}
+
+@keyframes term-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Soft pulse used to draw attention to the live task badge. */
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 180, 84, 0.45);
+  }
+  50% {
+    opacity: 0.85;
+    box-shadow: 0 0 0 6px rgba(255, 180, 84, 0);
+  }
+}
+
+.live-dot {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret::after,
+  .live-dot {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Focus visibility consistent with the terminal palette. */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-acid);
+  outline-offset: 2px;
+  border-radius: 2px;
+}

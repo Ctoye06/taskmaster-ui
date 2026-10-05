@@ -1,0 +1,24 @@
+---
+interface Props {
+  points: number;
+  /** Optional finishing position to show a medal for the podium. */
+  position?: number;
+  class?: string;
+}
+
+const { points, position, class: className = "" } = Astro.props;
+
+const medal =
+  position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
+---
+
+<span
+  class:list={[
+    "inline-flex items-center gap-1.5 rounded border border-grid bg-term-panel-2 px-2.5 py-1 text-sm font-bold tabular-nums",
+    className,
+  ]}
+>
+  {medal && <span aria-hidden="true">{medal}</span>}
+  <span class="text-acid">{points}</span>
+  <span class="text-ink-faint text-xs font-medium">pts</span>
+</span>

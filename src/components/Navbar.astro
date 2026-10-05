@@ -1,0 +1,124 @@
+---
+// Site navigation styled as a terminal window title bar.
+const links = [
+  { href: "/", label: "home" },
+  { href: "/tasks", label: "tasks" },
+  { href: "/leaderboard", label: "leaderboard" },
+  { href: "/compare", label: "compare" },
+  { href: "/players", label: "players" },
+];
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === "/" ? path === "/" : path.startsWith(href);
+---
+
+<header
+  class="sticky top-0 z-50 border-b border-grid bg-term-bg/85 backdrop-blur supports-[backdrop-filter]:bg-term-bg/70"
+>
+  <nav
+    class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6"
+    aria-label="Primary"
+  >
+    <!-- Brand / terminal traffic lights -->
+    <a href="/" class="group flex items-center gap-3">
+      <span class="hidden items-center gap-1.5 sm:flex" aria-hidden="true">
+        <span class="h-3 w-3 rounded-full bg-dot-red"></span>
+        <span class="h-3 w-3 rounded-full bg-dot-amber"></span>
+        <span class="h-3 w-3 rounded-full bg-dot-green"></span>
+      </span>
+      <span class="flex flex-col leading-none">
+        <span
+          class="text-base font-extrabold tracking-[0.18em] text-ink sm:text-lg"
+        >
+          EAYL&nbsp;<span class="text-acid text-glow">TASKMASTER</span>
+        </span>
+        <span class="mt-1 text-[10px] tracking-[0.25em] text-ink-faint">
+          THE ULTIMATE ACADEMY CHALLENGE
+        </span>
+      </span>
+    </a>
+
+    <!-- Desktop links -->
+    <ul class="hidden items-center gap-1 md:flex">
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              aria-current={isActive(link.href) ? "page" : undefined}
+              class:list={[
+                "group inline-flex items-center rounded px-3 py-2 text-sm tracking-wide transition-colors",
+                isActive(link.href)
+                  ? "text-acid"
+                  : "text-ink-dim hover:text-ink",
+              ]}
+            >
+              <span
+                class:list={[
+                  "mr-1",
+                  isActive(link.href)
+                    ? "text-acid"
+                    : "text-ink-faint group-hover:text-acid",
+                ]}
+              >
+                ./
+              </span>
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <!-- Mobile toggle -->
+    <button
+      type="button"
+      id="nav-toggle"
+      class="inline-flex items-center gap-2 rounded border border-grid px-3 py-2 text-xs text-ink-dim hover:text-ink md:hidden"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+    >
+      <span class="text-acid">~/</span>
+      <span id="nav-toggle-label">menu</span>
+    </button>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div
+    id="mobile-menu"
+    class="hidden border-t border-grid bg-term-panel md:hidden"
+  >
+    <ul class="mx-auto max-w-6xl px-4 py-2 sm:px-6">
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              aria-current={isActive(link.href) ? "page" : undefined}
+              class:list={[
+                "flex items-center gap-2 border-b border-grid-soft py-3 text-sm tracking-wide last:border-b-0",
+                isActive(link.href) ? "text-acid" : "text-ink-dim",
+              ]}
+            >
+              <span class="text-ink-faint">./</span>
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</header>
+
+<script>
+  const toggle = document.getElementById("nav-toggle");
+  const menu = document.getElementById("mobile-menu");
+  const label = document.getElementById("nav-toggle-label");
+
+  toggle?.addEventListener("click", () => {
+    const open = menu?.classList.toggle("hidden") === false;
+    toggle.setAttribute("aria-expanded", String(open));
+    if (label) label.textContent = open ? "close" : "menu";
+  });
+</script>

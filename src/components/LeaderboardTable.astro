@@ -1,0 +1,68 @@
+---
+import type { LeaderboardRow } from "../types";
+import { getPlayerInitials } from "../data/queries";
+
+interface Props {
+  rows: LeaderboardRow[];
+  class?: string;
+}
+
+const { rows, class: className = "" } = Astro.props;
+
+const medal = (rank: number) =>
+  rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+
+// Emphasis styling for the podium positions.
+const accent = (rank: number) => {
+  if (rank === 1)
+    return "border-amber/40 bg-amber/5 ring-1 ring-amber/20";
+  if (rank === 2) return "border-ink-dim/30 bg-ink/5";
+  if (rank === 3) return "border-acid-dim/40 bg-acid/5";
+  return "border-grid bg-term-panel";
+};
+---
+
+<ul class:list={["flex flex-col gap-2", className]}>
+  {
+    rows.map((row) => (
+      <li>
+        <a
+          href={`/players/${row.player.id}`}
+          class:list={[
+            "group flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors hover:border-ink-faint sm:gap-4 sm:px-4",
+            accent(row.rank),
+          ]}
+        >
+          <span class="flex w-7 shrink-0 justify-center text-lg font-extrabold tabular-nums">
+            {medal(row.rank) ?? (
+              <span class="text-ink-faint">{String(row.rank).padStart(2, "0")}</span>
+            )}
+          </span>
+
+          <span
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-xs font-bold text-ink-dim"
+            aria-hidden="true"
+          >
+            {getPlayerInitials(row.player)}
+          </span>
+
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-semibold text-ink group-hover:text-acid">
+              {row.player.name}
+            </span>
+            <span class="block text-[11px] text-ink-faint">
+              {row.wins} {row.wins === 1 ? "win" : "wins"} &middot; {row.tasksCompleted} tasks
+            </span>
+          </span>
+
+          <span class="shrink-0 text-right">
+            <span class="block text-lg font-extrabold tabular-nums text-acid">
+              {row.points}
+            </span>
+            <span class="block text-[10px] tracking-widest text-ink-faint">PTS</span>
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>

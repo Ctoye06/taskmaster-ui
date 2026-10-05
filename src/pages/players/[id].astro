@@ -1,0 +1,249 @@
+---
+import type { GetStaticPaths } from "astro";
+import Layout from "../../layouts/Layout.astro";
+import TerminalWindow from "../../components/TerminalWindow.astro";
+import StatCard from "../../components/StatCard.astro";
+import { players } from "../../data/players";
+import {
+  getPlayerStanding,
+  getPlayerResults,
+  getPlayerInitials,
+} from "../../data/queries";
+
+export const getStaticPaths = (() => {
+  return players.map((player) => ({ params: { id: player.id } }));
+}) satisfies GetStaticPaths;
+
+const { id } = Astro.params;
+const standing = getPlayerStanding(id!);
+
+// Unknown id → 404 rather than a broken page.
+if (!standing) {
+  return Astro.redirect("/404");
+}
+
+const { player, rank } = standing;
+const results = getPlayerResults(player.id);
+
+const initials = getPlayerInitials(player);
+const hasPlayed = standing.tasksCompleted > 0;
+const bestFinish = hasPlayed
+  ? Math.min(...results.map((r) => r.position))
+  : 0;
+
+const medal = (position: number) =>
+  position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
+
+const ordinal = (n: number) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
+};
+
+const weekLabel = (n: number) => `WEEK ${String(n).padStart(2, "0")}`;
+
+// Position cell tint, mirroring the leaderboard form guide.
+const positionClasses = (position: number) => {
+  if (position === 1) return "border-acid-dim bg-acid/10 text-acid";
+  if (position <= 3) return "border-cyan/40 bg-cyan/5 text-cyan";
+  return "border-grid bg-term-bg text-ink-dim";
+};
+
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
+---
+
+<Layout title={`${player.name} // EAYL TASKMASTER`}>
+  <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Back link -->
+    <a href="/players" class={btnGhost}>&larr; ALL PLAYERS</a>
+
+    <!-- Header -->
+    <header class="mt-6">
+      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        cat ~/players/{player.id}.md
+      </p>
+      <div class="mt-4 flex items-center gap-4 sm:gap-5">
+        <span
+          class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-grid bg-term-panel text-xl font-extrabold text-ink-dim sm:h-20 sm:w-20 sm:text-2xl"
+          aria-hidden="true"
+        >
+          {initials}
+        </span>
+        <div class="min-w-0">
+          <h1
+            class="truncate text-4xl font-extrabold tracking-tight text-ink text-glow sm:text-6xl"
+          >
+            {player.name}
+          </h1>
+          <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <span class="font-bold tracking-widest text-magenta">
+              RANK #{rank}
+            </span>
+            <span class="text-ink-faint" aria-hidden="true">·</span>
+            <span class="text-ink-dim">
+              <span class="font-bold text-acid">{standing.points}</span> pts
+            </span>
+            <span class="text-ink-faint" aria-hidden="true">·</span>
+            <span class="text-ink-dim">
+              {standing.wins} {standing.wins === 1 ? "win" : "wins"}
+            </span>
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Key stats -->
+    <section class="mt-8">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          value={`#${rank}`}
+          label="League position"
+          command="rank --self"
+          accent="acid"
+        />
+        <StatCard
+          value={standing.points}
+          label="Total points"
+          command="sum scores"
+          accent="magenta"
+        />
+        <StatCard
+          value={standing.wins}
+          label="Task wins"
+          command="count wins"
+          accent="cyan"
+        />
+        <StatCard
+          value={hasPlayed ? standing.averagePosition.toFixed(1) : "—"}
+          label="Average finish"
+          command="avg position"
+          accent="amber"
+        />
+      </div>
+    </section>
+
+    <!-- Task-by-task record -->
+    <section class="mt-12">
+      <div class="mb-4 flex items-end justify-between gap-4">
+        <h2 class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+          history --player {player.id}
+        </h2>
+        {
+          hasPlayed && bestFinish && (
+            <span class="text-[11px] text-ink-faint">
+              best finish: {medal(bestFinish) ?? ordinal(bestFinish)}
+            </span>
+          )
+        }
+      </div>
+
+      <TerminalWindow
+        title={`~/players/${player.id}.log`}
+        meta={`${standing.tasksCompleted} tasks`}
+        bodyClass="p-0 sm:p-0"
+      >
+        {
+          hasPlayed ? (
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse text-sm">
+                <caption class="sr-only">
+                  {player.name}'s results, task by task
+                </caption>
+                <thead>
+                  <tr class="border-b border-grid">
+                    <th
+                      scope="col"
+                      class="px-3 py-2.5 text-left text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+                    >
+                      Week
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-3 py-2.5 text-left text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+                    >
+                      Task
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-3 py-2.5 text-center text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+                    >
+                      Finish
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-3 py-2.5 text-right text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+                    >
+                      Pts
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((result) => (
+                    <tr class="group border-b border-grid-soft transition-colors last:border-b-0 hover:bg-term-panel-2/60">
+                      <td class="px-3 py-3 whitespace-nowrap text-[11px] font-bold tracking-[0.2em] text-magenta">
+                        {weekLabel(result.task.weekNumber)}
+                      </td>
+                      <td class="px-3 py-3">
+                        <a
+                          href={`/tasks/${result.task.id}`}
+                          class="font-semibold text-ink group-hover:text-acid"
+                        >
+                          {result.task.title}
+                        </a>
+                      </td>
+                      <td class="px-3 py-3 text-center">
+                        <span class="inline-flex items-center gap-1.5">
+                          {medal(result.position) && (
+                            <span aria-hidden="true">
+                              {medal(result.position)}
+                            </span>
+                          )}
+                          <span
+                            class:list={[
+                              "inline-flex min-w-7 items-center justify-center rounded border px-1.5 py-0.5 text-[11px] font-bold tabular-nums",
+                              positionClasses(result.position),
+                            ]}
+                          >
+                            {ordinal(result.position)}
+                          </span>
+                        </span>
+                      </td>
+                      <td class="px-3 py-3 text-right">
+                        <span class="text-base font-extrabold tabular-nums text-acid">
+                          {result.points}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="px-4 py-10 text-center sm:px-6">
+              <p class="text-4xl" aria-hidden="true">
+                🫥
+              </p>
+              <p class="mt-3 text-sm text-ink-dim">
+                <span class="text-acid">$</span> grep {player.id} scores.tsv
+                &rarr; <span class="text-ink-faint">no matches yet</span>
+              </p>
+              <p class="mt-1 text-[11px] text-ink-faint">
+                No tasks scored so far. Everyone starts at zero.
+              </p>
+            </div>
+          )
+        }
+      </TerminalWindow>
+
+      <p class="mt-4 text-[11px] text-ink-faint">
+        <span class="text-acid">//</span> Points awarded by finishing position —
+        10 for a win, down to 1. See the
+        <a href="/leaderboard" class="text-cyan hover:text-ink">
+          full leaderboard
+        </a>
+        for live standings.
+      </p>
+    </section>
+  </div>
+</Layout>

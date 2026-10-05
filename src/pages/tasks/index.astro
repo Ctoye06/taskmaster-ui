@@ -1,0 +1,111 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import TaskCard from "../../components/TaskCard.astro";
+import { getTaskSummaries } from "../../data/queries";
+import type { TaskStatus } from "../../types";
+
+const summaries = getTaskSummaries();
+
+const live = summaries.filter((s) => s.task.status === "live");
+const upcoming = summaries.filter((s) => s.task.status === "upcoming");
+const completed = summaries
+  .filter((s) => s.task.status === "completed")
+  .sort((a, b) => b.task.weekNumber - a.task.weekNumber);
+
+const counts: Record<TaskStatus, number> = {
+  live: live.length,
+  upcoming: upcoming.length,
+  completed: completed.length,
+};
+---
+
+<Layout title="Tasks // EAYL TASKMASTER">
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Page header -->
+    <header>
+      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        ls ~/tasks
+      </p>
+      <h1
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-6xl"
+      >
+        THE <span class="text-acid text-glow">TASKS</span>
+      </h1>
+      <p class="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base">
+        <span class="text-acid">//</span> {summaries.length} weekly challenges.
+        One released every Friday at 3:00 PM. Upcoming briefs stay encrypted
+        until release.
+      </p>
+
+      <dl class="mt-6 flex flex-wrap gap-3 text-xs">
+        <div
+          class="flex items-center gap-2 rounded border border-amber/40 bg-amber/5 px-3 py-1.5"
+        >
+          <span class="live-dot h-1.5 w-1.5 rounded-full bg-amber" aria-hidden="true"></span>
+          <dt class="tracking-widest text-amber">LIVE</dt>
+          <dd class="font-bold text-ink tabular-nums">{counts.live}</dd>
+        </div>
+        <div
+          class="flex items-center gap-2 rounded border border-acid-dim bg-acid/5 px-3 py-1.5"
+        >
+          <dt class="tracking-widest text-acid">COMPLETED</dt>
+          <dd class="font-bold text-ink tabular-nums">{counts.completed}</dd>
+        </div>
+        <div
+          class="flex items-center gap-2 rounded border border-grid bg-term-panel px-3 py-1.5"
+        >
+          <dt class="tracking-widest text-ink-faint">LOCKED</dt>
+          <dd class="font-bold text-ink tabular-nums">{counts.upcoming}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <!-- Live task(s) -->
+    {
+      live.length > 0 && (
+        <section class="mt-12">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            tasks --filter live
+          </h2>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {live.map((summary) => (
+              <TaskCard summary={summary} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <!-- Completed tasks -->
+    {
+      completed.length > 0 && (
+        <section class="mt-12">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            tasks --filter completed
+          </h2>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {completed.map((summary) => (
+              <TaskCard summary={summary} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <!-- Upcoming / locked tasks -->
+    {
+      upcoming.length > 0 && (
+        <section class="mt-12">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            tasks --filter locked
+          </h2>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {upcoming.map((summary) => (
+              <TaskCard summary={summary} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+  </div>
+</Layout>

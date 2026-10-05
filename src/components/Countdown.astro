@@ -1,0 +1,100 @@
+---
+interface Props {
+  /** ISO deadline string. */
+  deadline: string;
+  class?: string;
+}
+
+const { deadline, class: className = "" } = Astro.props;
+
+// Build-time fallback so the component is not empty before JS runs or if
+// JavaScript is disabled. The client script keeps it ticking live.
+const diff = Math.max(0, new Date(deadline).getTime() - Date.now());
+const totalSeconds = Math.floor(diff / 1000);
+const initial = {
+  days: Math.floor(totalSeconds / 86400),
+  hours: Math.floor((totalSeconds % 86400) / 3600),
+  minutes: Math.floor((totalSeconds % 3600) / 60),
+  seconds: totalSeconds % 60,
+};
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+const units: { key: keyof typeof initial; label: string }[] = [
+  { key: "days", label: "days" },
+  { key: "hours", label: "hours" },
+  { key: "minutes", label: "mins" },
+  { key: "seconds", label: "secs" },
+];
+---
+
+<div
+  class:list={["countdown", className]}
+  data-deadline={deadline}
+  role="timer"
+  aria-label="Time remaining until the deadline"
+>
+  <div class="grid grid-cols-4 gap-2 sm:gap-3">
+    {
+      units.map((unit) => (
+        <div class="rounded-md border border-grid bg-term-bg/70 px-2 py-3 text-center">
+          <div
+            data-unit={unit.key}
+            class="text-2xl font-extrabold tabular-nums text-acid text-glow sm:text-4xl"
+          >
+            {pad(initial[unit.key])}
+          </div>
+          <div class="mt-1 text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+            {unit.label}
+          </div>
+        </div>
+      ))
+    }
+  </div>
+  <p
+    data-countdown-done
+    hidden
+    class="mt-3 text-center text-sm font-bold tracking-widest text-amber"
+  >
+    &gt; TIME'S UP
+  </p>
+</div>
+
+<script>
+  function pad(n: number): string {
+    return String(n).padStart(2, "0");
+  }
+
+  document.querySelectorAll<HTMLElement>(".countdown").forEach((root) => {
+    const deadline = new Date(root.dataset.deadline ?? "").getTime();
+    if (Number.isNaN(deadline)) return;
+
+    const cells = {
+      days: root.querySelector<HTMLElement>('[data-unit="days"]'),
+      hours: root.querySelector<HTMLElement>('[data-unit="hours"]'),
+      minutes: root.querySelector<HTMLElement>('[data-unit="minutes"]'),
+      seconds: root.querySelector<HTMLElement>('[data-unit="seconds"]'),
+    };
+    const doneEl = root.querySelector<HTMLElement>("[data-countdown-done]");
+
+    function tick() {
+      const diff = Math.max(0, deadline - Date.now());
+      const total = Math.floor(diff / 1000);
+
+      if (cells.days) cells.days.textContent = pad(Math.floor(total / 86400));
+      if (cells.hours)
+        cells.hours.textContent = pad(Math.floor((total % 86400) / 3600));
+      if (cells.minutes)
+        cells.minutes.textContent = pad(Math.floor((total % 3600) / 60));
+      if (cells.seconds) cells.seconds.textContent = pad(total % 60);
+
+      if (diff <= 0) {
+        doneEl?.removeAttribute("hidden");
+        clearInterval(timer);
+      }
+    }
+
+    tick();
+    const timer = setInterval(tick, 1000);
+  });
+</script>

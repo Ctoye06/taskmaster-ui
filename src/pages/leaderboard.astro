@@ -1,0 +1,203 @@
+---
+import Layout from "../layouts/Layout.astro";
+import TerminalWindow from "../components/TerminalWindow.astro";
+import StandingsTable from "../components/StandingsTable.astro";
+import StatCard from "../components/StatCard.astro";
+import { getLeaderboard, getCompetitionStats, getPlayerInitials } from "../data/queries";
+
+const leaderboard = getLeaderboard();
+const stats = getCompetitionStats();
+
+// Visual podium order: runner-up on the left, champion raised in the middle,
+// third on the right. Guard against a short roster just in case.
+const [first, second, third] = leaderboard;
+const podium = [second, first, third].filter(Boolean);
+
+const podiumStyle: Record<
+  number,
+  { medal: string; label: string; ring: string; height: string }
+> = {
+  1: {
+    medal: "🥇",
+    label: "CHAMPION",
+    ring: "border-amber/50 bg-amber/5 ring-1 ring-amber/20",
+    height: "sm:pt-4",
+  },
+  2: {
+    medal: "🥈",
+    label: "RUNNER-UP",
+    ring: "border-ink-dim/30 bg-ink/5",
+    height: "sm:mt-8",
+  },
+  3: {
+    medal: "🥉",
+    label: "THIRD",
+    ring: "border-acid-dim/50 bg-acid/5",
+    height: "sm:mt-12",
+  },
+};
+
+const leader = first;
+---
+
+<Layout title="Leaderboard // EAYL TASKMASTER">
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- ============================ HEADER ============================ -->
+    <header>
+      <p class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+        cat ~/leaderboard.md
+      </p>
+      <h1
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-6xl"
+      >
+        THE <span class="text-acid text-glow">LEADERBOARD</span>
+      </h1>
+      <p class="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base">
+        <span class="text-acid">//</span> Live standings across {stats.tasksCompleted}
+        scored {stats.tasksCompleted === 1 ? "task" : "tasks"}. Ranked by points,
+        then wins, then average finishing position.
+      </p>
+    </header>
+
+    <!-- ============================ PODIUM ============================ -->
+    {
+      podium.length === 3 && (
+        <section class="mt-10" aria-labelledby="podium-heading">
+          <h2
+            id="podium-heading"
+            class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+          >
+            leaderboard --podium
+          </h2>
+
+          <ol class="grid grid-cols-3 items-end gap-3 sm:gap-4">
+            {podium.map((row) => {
+              const style = podiumStyle[row.rank];
+              return (
+                <li class:list={["flex", style.height]}>
+                  <a
+                    href={`/players/${row.player.id}`}
+                    class:list={[
+                      "group flex w-full flex-col items-center gap-2 rounded-xl border px-2 py-4 text-center transition-colors hover:border-ink-faint sm:px-4",
+                      style.ring,
+                    ]}
+                  >
+                    <span class="text-2xl sm:text-3xl" aria-hidden="true">
+                      {style.medal}
+                    </span>
+                    <span
+                      class="flex h-11 w-11 items-center justify-center rounded border border-grid bg-term-bg text-sm font-bold text-ink-dim sm:h-14 sm:w-14"
+                      aria-hidden="true"
+                    >
+                      {getPlayerInitials(row.player)}
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block truncate text-sm font-extrabold text-ink group-hover:text-acid sm:text-base">
+                        {row.player.name}
+                      </span>
+                      <span class="block text-[10px] tracking-[0.2em] text-ink-faint">
+                        {style.label}
+                      </span>
+                    </span>
+                    <span class="mt-1">
+                      <span class="text-xl font-extrabold tabular-nums text-acid sm:text-2xl">
+                        {row.points}
+                      </span>
+                      <span class="ml-1 text-[10px] tracking-widest text-ink-faint">
+                        PTS
+                      </span>
+                    </span>
+                    <span class="text-[11px] text-ink-faint">
+                      {row.wins} {row.wins === 1 ? "win" : "wins"}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )
+    }
+
+    <!-- ======================= FULL STANDINGS ======================= -->
+    <section class="mt-12">
+      <div class="mb-4 flex items-end justify-between gap-4">
+        <h2
+          class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+        >
+          leaderboard --all
+        </h2>
+        <span class="text-[11px] text-ink-faint">
+          {leaderboard.length} players
+        </span>
+      </div>
+
+      <TerminalWindow title="~/leaderboard.tsv" meta="sorted by pts" bodyClass="p-0 sm:p-0">
+        <StandingsTable rows={leaderboard} />
+      </TerminalWindow>
+
+      <!-- Form guide legend -->
+      <p class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-ink-faint">
+        <span class="tracking-widest uppercase">form guide:</span>
+        <span class="flex items-center gap-1.5">
+          <span
+            class="flex h-4 w-4 items-center justify-center rounded border border-acid-dim bg-acid/10 text-[10px] font-bold text-acid"
+            aria-hidden="true">1</span
+          >
+          win
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span
+            class="flex h-4 w-4 items-center justify-center rounded border border-cyan/40 bg-cyan/5 text-[10px] font-bold text-cyan"
+            aria-hidden="true">3</span
+          >
+          podium
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span
+            class="flex h-4 w-4 items-center justify-center rounded border border-grid bg-term-bg text-[10px] font-bold text-ink-faint"
+            aria-hidden="true">6</span
+          >
+          finishing position
+        </span>
+        <span>· most recent last</span>
+      </p>
+    </section>
+
+    <!-- ===================== STANDINGS SUMMARY ===================== -->
+    <section class="mt-12">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        stats --standings
+      </h2>
+
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          value={leader ? leader.player.name : "—"}
+          label="Current leader"
+          command="head -1 leaderboard"
+          accent="acid"
+        />
+        <StatCard
+          value={leader ? leader.points : 0}
+          label="Points to beat"
+          command="max scores"
+          accent="magenta"
+        />
+        <StatCard
+          value={stats.tasksCompleted}
+          label="Tasks scored"
+          command="count tasks --done"
+          accent="cyan"
+        />
+        <StatCard
+          value={stats.differentWinners}
+          label="Different winners"
+          command="uniq winners"
+          accent="amber"
+        />
+      </div>
+    </section>
+  </div>
+</Layout>

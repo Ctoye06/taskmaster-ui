@@ -1,0 +1,81 @@
+---
+interface Props {
+  /** Metric name shown in the centre column. */
+  label: string;
+  /** Optional command-style sub-label shown beneath the metric name. */
+  command?: string;
+  /** Player A's value, pre-formatted for display. */
+  aDisplay: string;
+  /** Player B's value, pre-formatted for display. */
+  bDisplay: string;
+  /** Which side holds the better value (or a tie). */
+  winner: "a" | "b" | "tie";
+  class?: string;
+}
+
+const {
+  label,
+  command,
+  aDisplay,
+  bDisplay,
+  winner,
+  class: className = "",
+} = Astro.props;
+
+const valueClass = (side: "a" | "b") =>
+  winner === side
+    ? "text-acid text-glow"
+    : winner === "tie"
+      ? "text-ink"
+      : "text-ink-dim";
+---
+
+<div
+  class:list={[
+    "grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-grid-soft py-3 last:border-b-0 sm:gap-4",
+    className,
+  ]}
+>
+  <div class="flex items-center justify-end gap-2">
+    <span
+      class:list={[
+        "text-xl font-extrabold tabular-nums sm:text-2xl",
+        valueClass("a"),
+      ]}
+    >
+      {aDisplay}
+    </span>
+    <span
+      class:list={["text-acid", winner === "a" ? "" : "invisible"]}
+      aria-hidden="true">◀</span
+    >
+  </div>
+
+  <div class="px-2 text-center">
+    <p class="text-[11px] font-bold tracking-[0.2em] text-ink-dim uppercase">
+      {label}
+    </p>
+    {
+      command && (
+        <p class="mt-0.5 text-[10px] text-ink-faint">
+          <span class="text-acid">$</span> {command}
+        </p>
+      )
+    }
+  </div>
+
+  <div class="flex items-center justify-start gap-2">
+    <span
+      class:list={["text-acid", winner === "b" ? "" : "invisible"]}
+      aria-hidden="true">▶</span
+    >
+    <span
+      class:list={[
+        "text-xl font-extrabold tabular-nums sm:text-2xl",
+        valueClass("b"),
+      ]}
+    >
+      {bDisplay}
+    </span>
+  </div>
+</div>
