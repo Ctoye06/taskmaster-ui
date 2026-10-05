@@ -13,8 +13,8 @@ import { players } from "./players";
  * `queries.ts`), so this file is the only thing you edit each week.
  *
  * Empty objects are placeholders for tasks that have not been scored yet.
- * (Remember to also flip the task's `status` to `"completed"` in `tasks.ts`
- * once a week is done so it counts towards rank movement.)
+ * (A task's `status` is derived automatically from its dates in `tasks.ts`,
+ * so there is nothing to flip manually once a week's deadline passes.)
  *
  * This becomes a Supabase table/query later; keep the exported shapes stable.
  */

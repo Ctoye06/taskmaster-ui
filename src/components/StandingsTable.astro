@@ -50,26 +50,124 @@ const movementMeta = (movement?: number) => {
 
 const th =
   "px-3 py-2.5 text-left text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase";
+const thBtn =
+  "inline-flex items-center gap-1 whitespace-nowrap uppercase tracking-[0.2em] transition-colors hover:text-ink focus-visible:outline-none";
+
+// Sort value used for the "avg pos" column: players who have not been scored
+// sink to the bottom when sorting best-first rather than appearing as "0".
+const avgSortValue = (row: LeaderboardRow) =>
+  row.tasksCompleted > 0 ? row.averagePosition : 9999;
 ---
 
-<div class:list={["overflow-x-auto", className]}>
+<div class:list={["overflow-x-auto", className]} data-sortable-standings>
   <table class="w-full border-collapse text-sm">
-    <caption class="sr-only">Full competition standings</caption>
+    <caption class="sr-only">
+      Full competition standings. Column headers can be used to re-sort the
+      table.
+    </caption>
     <thead>
       <tr class="border-b border-grid">
-        <th scope="col" class:list={[th, "w-12 text-center"]}>#</th>
-        <th scope="col" class={th}>Player</th>
-        <th scope="col" class:list={[th, "hidden text-center sm:table-cell"]}>
-          Played
+        <th
+          scope="col"
+          class:list={[th, "w-12 text-center"]}
+          aria-sort="ascending"
+        >
+          <button
+            type="button"
+            class:list={[thBtn, "mx-auto"]}
+            data-sort-key="rank"
+            data-sort-type="num"
+            data-default-dir="asc"
+          >
+            #<span
+              class="cd-sort-arrow text-[9px]"
+              data-arrow
+              aria-hidden="true"></span>
+          </button>
         </th>
-        <th scope="col" class:list={[th, "hidden text-center sm:table-cell"]}>
-          Wins
+        <th scope="col" class={th} aria-sort="none">
+          <button
+            type="button"
+            class={thBtn}
+            data-sort-key="name"
+            data-sort-type="str"
+            data-default-dir="asc"
+          >
+            Player<span
+              class="cd-sort-arrow text-[9px]"
+              data-arrow
+              aria-hidden="true"></span>
+          </button>
         </th>
-        <th scope="col" class:list={[th, "hidden text-center lg:table-cell"]}>
-          Avg&nbsp;pos
+        <th
+          scope="col"
+          class:list={[th, "hidden text-center sm:table-cell"]}
+          aria-sort="none"
+        >
+          <button
+            type="button"
+            class:list={[thBtn, "mx-auto"]}
+            data-sort-key="played"
+            data-sort-type="num"
+            data-default-dir="desc"
+          >
+            Played<span
+              class="cd-sort-arrow text-[9px]"
+              data-arrow
+              aria-hidden="true"></span>
+          </button>
+        </th>
+        <th
+          scope="col"
+          class:list={[th, "hidden text-center sm:table-cell"]}
+          aria-sort="none"
+        >
+          <button
+            type="button"
+            class:list={[thBtn, "mx-auto"]}
+            data-sort-key="wins"
+            data-sort-type="num"
+            data-default-dir="desc"
+          >
+            Wins<span
+              class="cd-sort-arrow text-[9px]"
+              data-arrow
+              aria-hidden="true"></span>
+          </button>
+        </th>
+        <th
+          scope="col"
+          class:list={[th, "hidden text-center lg:table-cell"]}
+          aria-sort="none"
+        >
+          <button
+            type="button"
+            class:list={[thBtn, "mx-auto"]}
+            data-sort-key="avg"
+            data-sort-type="num"
+            data-default-dir="asc"
+          >
+            Avg&nbsp;pos<span
+              class="cd-sort-arrow text-[9px]"
+              data-arrow
+              aria-hidden="true"></span>
+          </button>
         </th>
         <th scope="col" class:list={[th, "hidden lg:table-cell"]}>Form</th>
-        <th scope="col" class:list={[th, "text-right"]}>Pts</th>
+        <th scope="col" class:list={[th, "text-right"]} aria-sort="none">
+          <button
+            type="button"
+            class:list={[thBtn, "ml-auto"]}
+            data-sort-key="pts"
+            data-sort-type="num"
+            data-default-dir="desc"
+          >
+            Pts<span
+              class="cd-sort-arrow text-[9px]"
+              data-arrow
+              aria-hidden="true"></span>
+          </button>
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -80,6 +178,14 @@ const th =
               "group border-b border-grid-soft transition-colors last:border-b-0 hover:bg-term-panel-2/60",
               rowAccent(row.rank),
             ]}
+            data-me-row
+            data-player-id={row.player.id}
+            data-rank={row.rank}
+            data-name={row.player.name.toLowerCase()}
+            data-played={row.tasksCompleted}
+            data-wins={row.wins}
+            data-avg={avgSortValue(row)}
+            data-pts={row.points}
           >
             <td class="px-3 py-3 text-center">
               {medal(row.rank) ? (
@@ -122,8 +228,13 @@ const th =
                   {getPlayerInitials(row.player)}
                 </span>
                 <span class="min-w-0">
-                  <span class="block truncate font-semibold text-ink group-hover:text-acid">
-                    {row.player.name}
+                  <span class="flex items-center gap-1.5">
+                    <span class="min-w-0 truncate font-semibold text-ink group-hover:text-acid">
+                      {row.player.name}
+                    </span>
+                    <span class="me-badge shrink-0 items-center rounded border border-acid bg-acid/10 px-1 py-0.5 text-[9px] font-bold tracking-[0.15em] text-acid">
+                      YOU
+                    </span>
                   </span>
                   <span class="block text-[11px] text-ink-faint sm:hidden">
                     {row.wins} {row.wins === 1 ? "win" : "wins"} &middot;{" "}
@@ -180,3 +291,90 @@ const th =
     </tbody>
   </table>
 </div>
+
+<script>
+  type Dir = "asc" | "desc";
+
+  document
+    .querySelectorAll<HTMLElement>("[data-sortable-standings]")
+    .forEach((root) => {
+      const tbody = root.querySelector("tbody");
+      const buttons = Array.from(
+        root.querySelectorAll<HTMLButtonElement>("button[data-sort-key]"),
+      );
+      if (!tbody || buttons.length === 0) return;
+
+      const rows = Array.from(
+        tbody.querySelectorAll<HTMLTableRowElement>("tr"),
+      );
+      const typeByKey = new Map(
+        buttons.map((b) => [b.dataset.sortKey!, b.dataset.sortType ?? "num"]),
+      );
+
+      let activeKey = "rank";
+      let activeDir: Dir = "asc";
+
+      function rank(row: HTMLTableRowElement) {
+        return Number(row.dataset.rank ?? 0);
+      }
+
+      function apply() {
+        const factor = activeDir === "asc" ? 1 : -1;
+        const isStr = typeByKey.get(activeKey) === "str";
+
+        const sorted = rows.slice().sort((a, b) => {
+          const av = a.dataset[activeKey] ?? "";
+          const bv = b.dataset[activeKey] ?? "";
+          let cmp: number;
+          if (isStr) {
+            cmp = av.localeCompare(bv);
+          } else {
+            cmp = Number(av) - Number(bv);
+          }
+          // Stable, meaningful tie-break: fall back to true competition rank.
+          if (cmp === 0) return rank(a) - rank(b);
+          return cmp * factor;
+        });
+
+        sorted.forEach((row) => tbody!.appendChild(row));
+
+        buttons.forEach((btn) => {
+          const th = btn.closest("th");
+          const arrow = btn.querySelector<HTMLElement>("[data-arrow]");
+          const isActive = btn.dataset.sortKey === activeKey;
+          if (th) {
+            th.setAttribute(
+              "aria-sort",
+              isActive
+                ? activeDir === "asc"
+                  ? "ascending"
+                  : "descending"
+                : "none",
+            );
+          }
+          if (arrow) {
+            arrow.textContent = isActive
+              ? activeDir === "asc"
+                ? "\u25B2"
+                : "\u25BC"
+              : "\u2195";
+          }
+        });
+      }
+
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const key = btn.dataset.sortKey!;
+          if (key === activeKey) {
+            activeDir = activeDir === "asc" ? "desc" : "asc";
+          } else {
+            activeKey = key;
+            activeDir = (btn.dataset.defaultDir as Dir) ?? "asc";
+          }
+          apply();
+        });
+      });
+
+      apply();
+    });
+</script>

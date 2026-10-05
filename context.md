@@ -133,7 +133,7 @@ Use a strong site title/logo such as:
 
 Include a small subtitle such as:
 
-**Engineering Academy Challenge**
+**The Ultimate Academy Challenge**
 
 On mobile, use a Tailwind CSS responsive navigation menu.
 

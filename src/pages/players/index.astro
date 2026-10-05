@@ -65,20 +65,95 @@ const unscored = roster.filter((row) => row.tasksCompleted === 0).length;
 
     <!-- Roster grid -->
     <section class="mt-12">
-      <h2
-        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2
+          class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+        >
+          players --all
+        </h2>
+        <div class="w-full max-w-xs sm:w-64">
+          <label for="player-search" class="sr-only">
+            Filter the roster by name
+          </label>
+          <div
+            class="flex items-center gap-2 rounded-lg border border-grid bg-term-panel px-3 py-2 focus-within:border-ink-faint"
+          >
+            <span class="text-acid" aria-hidden="true">/</span>
+            <input
+              id="player-search"
+              type="search"
+              inputmode="search"
+              autocomplete="off"
+              placeholder="filter by name…"
+              data-player-search
+              class="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      <p class="sr-only" aria-live="polite" data-player-count></p>
+
+      <ul
+        class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3"
+        data-player-grid
       >
-        players --all
-      </h2>
-      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {
           roster.map((row) => (
-            <li>
+            <li data-player-item data-name={row.player.name.toLowerCase()}>
               <PlayerCard row={row} class="h-full" />
             </li>
           ))
         }
       </ul>
+
+      <p
+        data-player-empty
+        hidden
+        class="mt-6 rounded-lg border border-grid border-dashed bg-term-panel/60 px-4 py-8 text-center text-sm text-ink-dim"
+      >
+        <span class="text-amber">&gt;</span> No players match
+        <span class="font-bold text-ink" data-player-empty-term></span>.
+      </p>
     </section>
   </div>
 </Layout>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>(
+    "[data-player-search]",
+  );
+  const grid = document.querySelector<HTMLElement>("[data-player-grid]");
+  const empty = document.querySelector<HTMLElement>("[data-player-empty]");
+  const emptyTerm = document.querySelector<HTMLElement>(
+    "[data-player-empty-term]",
+  );
+  const count = document.querySelector<HTMLElement>("[data-player-count]");
+
+  if (input && grid) {
+    const items = Array.from(
+      grid.querySelectorAll<HTMLElement>("[data-player-item]"),
+    );
+
+    function apply(query: string) {
+      const q = query.trim().toLowerCase();
+      let shown = 0;
+      items.forEach((item) => {
+        const match = q === "" || (item.dataset.name ?? "").includes(q);
+        item.hidden = !match;
+        if (match) shown += 1;
+      });
+
+      if (empty) empty.hidden = shown !== 0;
+      if (emptyTerm) emptyTerm.textContent = `"${query.trim()}"`;
+      if (count) {
+        count.textContent =
+          q === ""
+            ? `Showing all ${items.length} players`
+            : `${shown} of ${items.length} players match`;
+      }
+    }
+
+    input.addEventListener("input", () => apply(input.value));
+  }
+</script>

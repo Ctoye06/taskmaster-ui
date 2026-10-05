@@ -45,7 +45,7 @@ const isActive = (href: string) => {
     </a>
 
     <!-- Desktop links -->
-    <ul class="hidden items-center gap-1 md:flex">
+    <ul class="hidden items-center gap-1 min-[1100px]:flex">
       {
         links.map((link) => (
           <li>
@@ -53,7 +53,7 @@ const isActive = (href: string) => {
               href={withBase(link.href)}
               aria-current={isActive(link.href) ? "page" : undefined}
               class:list={[
-                "group inline-flex items-center rounded px-3 py-2 text-sm tracking-wide transition-colors",
+                "group inline-flex shrink-0 items-center whitespace-nowrap rounded px-2 py-2 text-sm tracking-wide transition-colors",
                 isActive(link.href)
                   ? "text-acid"
                   : "text-ink-dim hover:text-ink",
@@ -79,7 +79,7 @@ const isActive = (href: string) => {
           type="button"
           data-command-palette-trigger
           aria-keyshortcuts="Meta+K Control+K"
-          class="ml-2 inline-flex items-center gap-2 rounded border border-grid px-2.5 py-1.5 text-xs text-ink-dim transition-colors hover:border-ink-faint hover:text-ink"
+          class="ml-1 inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded border border-grid px-2.5 py-1.5 text-xs text-ink-dim transition-colors hover:border-ink-faint hover:text-ink"
         >
           <span class="text-acid" aria-hidden="true">$</span>
           <span class="tracking-wide">search</span>
@@ -89,13 +89,50 @@ const isActive = (href: string) => {
           >
         </button>
       </li>
+      <li>
+        <button
+          type="button"
+          data-theme-toggle
+          aria-label="Toggle light / dark theme"
+          title="Toggle light / dark theme"
+          class="ml-1 inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded border border-grid text-ink-dim transition-colors hover:border-ink-faint hover:text-acid"
+        >
+          <svg
+            class="theme-icon-moon h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg
+            class="theme-icon-sun h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4"></circle>
+            <path
+              d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+            ></path>
+          </svg>
+        </button>
+      </li>
     </ul>
 
     <!-- Mobile toggle -->
     <button
       type="button"
       id="nav-toggle"
-      class="inline-flex items-center gap-2 rounded border border-grid px-3 py-2 text-xs text-ink-dim hover:text-ink md:hidden"
+      class="inline-flex items-center gap-2 rounded border border-grid px-3 py-2 text-xs text-ink-dim hover:text-ink min-[1100px]:hidden"
       aria-expanded="false"
       aria-controls="mobile-menu"
     >
@@ -107,7 +144,7 @@ const isActive = (href: string) => {
   <!-- Mobile menu -->
   <div
     id="mobile-menu"
-    class="hidden border-t border-grid bg-term-panel md:hidden"
+    class="hidden border-t border-grid bg-term-panel min-[1100px]:hidden"
   >
     <ul class="mx-auto max-w-6xl px-4 py-2 sm:px-6">
       <li>
@@ -121,6 +158,20 @@ const isActive = (href: string) => {
           <kbd
             class="ml-auto rounded border border-grid bg-term-bg px-1.5 py-0.5 text-[10px] tracking-widest text-ink-faint"
             >⌘K</kbd
+          >
+        </button>
+      </li>
+      <li>
+        <button
+          type="button"
+          data-theme-toggle
+          aria-label="Toggle colour theme"
+          class="flex w-full items-center gap-2 border-b border-grid-soft py-3 text-left text-sm tracking-wide text-ink-dim"
+        >
+          <span class="text-acid">$</span>
+          theme
+          <span data-theme-state class="ml-auto tracking-widest text-ink-faint"
+            >--dark</span
           >
         </button>
       </li>
@@ -154,5 +205,38 @@ const isActive = (href: string) => {
     const open = menu?.classList.toggle("hidden") === false;
     toggle.setAttribute("aria-expanded", String(open));
     if (label) label.textContent = open ? "close" : "menu";
+  });
+
+  // ---- Light / dark theme toggle -------------------------------------
+  const root = document.documentElement;
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const stateLabels = document.querySelectorAll("[data-theme-state]");
+
+  const metaColors = { dark: "#080b10", light: "#f4f6f3" } as const;
+
+  const syncTheme = (theme: "dark" | "light") => {
+    root.setAttribute("data-theme", theme);
+    themeMeta?.setAttribute("content", metaColors[theme]);
+    stateLabels.forEach((el) => {
+      el.textContent = `--${theme}`;
+    });
+  };
+
+  // Reflect whatever the pre-paint script already applied.
+  const current =
+    root.getAttribute("data-theme") === "light" ? "light" : "dark";
+  syncTheme(current);
+
+  document.querySelectorAll("[data-theme-toggle]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const next =
+        root.getAttribute("data-theme") === "light" ? "dark" : "light";
+      syncTheme(next);
+      try {
+        localStorage.setItem("eayl-theme", next);
+      } catch {
+        /* storage unavailable — theme still applies for this session */
+      }
+    });
   });
 </script>

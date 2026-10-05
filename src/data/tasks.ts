@@ -1,9 +1,32 @@
-import type { Task } from "../types";
+import type { Task, TaskStatus } from "../types";
 
-// 16 weekly tasks. Weeks 1-3 are completed, week 4 is live, the rest are
-// upcoming. Dates are mock values (local time, Fridays at 15:00). Swap this
-// array for a Supabase query later without changing consumers.
-export const tasks: Task[] = [
+/**
+ * Derives a task's status purely from its release/deadline dates, so the
+ * status is always consistent with the clock and self-corrects as time
+ * passes (e.g. a live task flips to "completed" once its deadline passes)
+ * instead of relying on a hardcoded value that can go stale.
+ *
+ *   now < releaseDate            → "upcoming" (brief still encrypted)
+ *   releaseDate <= now < deadline → "live"     (task is open)
+ *   now >= deadline              → "completed" (task closed)
+ */
+export function deriveTaskStatus(
+  task: Pick<Task, "releaseDate" | "deadline">,
+  now: number = Date.now(),
+): TaskStatus {
+  const release = new Date(task.releaseDate).getTime();
+  const deadline = new Date(task.deadline).getTime();
+  if (Number.isNaN(release) || Number.isNaN(deadline) || now < release) {
+    return "upcoming";
+  }
+  return now < deadline ? "live" : "completed";
+}
+
+// 16 weekly tasks. Dates are mock values (local time, Fridays at 15:00).
+// Status is intentionally omitted here and derived from the dates below, so
+// this schedule is the single source of truth. Swap this array for a Supabase
+// query later without changing consumers.
+const schedule: Omit<Task, "status">[] = [
   {
     id: "week-01",
     weekNumber: 1,
@@ -13,7 +36,6 @@ export const tasks: Task[] = [
       "For the next seven days you are responsible for someone who cannot speak, cannot walk, and absolutely cannot be allowed to crack under pressure. Keep your egg safe until Friday afternoon. Your time starts now.",
     releaseDate: "2026-09-18T15:00:00",
     deadline: "2026-09-25T15:00:00",
-    status: "completed",
   },
   {
     id: "week-02",
@@ -24,7 +46,6 @@ export const tasks: Task[] = [
       "Using any mapping tool of your choice, plan and navigate a route that, when traced on a map, forms a recognizable drawing. Creativity and accuracy are key.",
     releaseDate: "2026-09-25T15:00:00",
     deadline: "2026-10-02T15:00:00",
-    status: "completed",
   },
   {
     id: "week-03",
@@ -35,7 +56,6 @@ export const tasks: Task[] = [
       "Complete your secret mission and eliminate your target. Once successful, discreetly tell your target and the Taskmaster. Your eliminated target must then hand their mission to you. If eliminated, you may assist others but never reveal that you have been eliminated. Be cunning. Be devious. Trust no one.",
     releaseDate: "2026-10-02T15:00:00",
     deadline: "2026-10-09T15:00:00",
-    status: "live",
   },
   {
     id: "week-04",
@@ -45,7 +65,6 @@ export const tasks: Task[] = [
     brief: "",
     releaseDate: "2026-10-09T15:00:00",
     deadline: "2026-10-16T15:00:00",
-    status: "upcoming",
   },
   {
     id: "week-05",
@@ -53,9 +72,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-10-09T15:00:00",
-    deadline: "2026-10-16T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-10-16T15:00:00",
+    deadline: "2026-10-23T15:00:00",
   },
   {
     id: "week-06",
@@ -63,9 +81,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-10-16T15:00:00",
-    deadline: "2026-10-23T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-10-23T15:00:00",
+    deadline: "2026-10-30T15:00:00",
   },
   {
     id: "week-07",
@@ -73,9 +90,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-10-23T15:00:00",
-    deadline: "2026-10-30T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-10-30T15:00:00",
+    deadline: "2026-11-06T15:00:00",
   },
   {
     id: "week-08",
@@ -83,9 +99,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-10-30T15:00:00",
-    deadline: "2026-11-06T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-11-06T15:00:00",
+    deadline: "2026-11-13T15:00:00",
   },
   {
     id: "week-09",
@@ -93,9 +108,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-11-06T15:00:00",
-    deadline: "2026-11-13T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-11-13T15:00:00",
+    deadline: "2026-11-20T15:00:00",
   },
   {
     id: "week-10",
@@ -103,9 +117,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-11-13T15:00:00",
-    deadline: "2026-11-20T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-11-20T15:00:00",
+    deadline: "2026-11-27T15:00:00",
   },
   {
     id: "week-11",
@@ -113,9 +126,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-11-20T15:00:00",
-    deadline: "2026-11-27T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-11-27T15:00:00",
+    deadline: "2026-12-04T15:00:00",
   },
   {
     id: "week-12",
@@ -123,9 +135,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-11-27T15:00:00",
-    deadline: "2026-12-04T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-12-04T15:00:00",
+    deadline: "2026-12-11T15:00:00",
   },
   {
     id: "week-13",
@@ -133,9 +144,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-12-04T15:00:00",
-    deadline: "2026-12-11T15:00:00",
-    status: "upcoming",
+    releaseDate: "2026-12-11T15:00:00",
+    deadline: "2026-12-18T15:00:00",
   },
   {
     id: "week-14",
@@ -143,9 +153,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-12-11T15:00:00",
-    deadline: "2026-12-18T15:00:00",
-    status: "upcoming",
+    releaseDate: "2027-01-01T15:00:00",
+    deadline: "2027-01-08T15:00:00",
   },
   {
     id: "week-15",
@@ -153,9 +162,8 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-12-18T15:00:00",
-    deadline: "2026-12-25T15:00:00",
-    status: "upcoming",
+    releaseDate: "2027-01-08T15:00:00",
+    deadline: "2027-01-15T15:00:00",
   },
   {
     id: "week-16",
@@ -163,11 +171,17 @@ export const tasks: Task[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-12-25T15:00:00",
-    deadline: "2027-01-01T15:00:00",
-    status: "upcoming",
+    releaseDate: "2027-01-15T15:00:00",
+    deadline: "2027-01-22T15:00:00",
   },
 ];
+
+// The schedule with each task's status computed from its dates. Consumers
+// import this (never `schedule`) so they always see a clock-correct status.
+export const tasks: Task[] = schedule.map((task) => ({
+  ...task,
+  status: deriveTaskStatus(task),
+}));
 
 export function getTaskById(id: string): Task | undefined {
   return tasks.find((t) => t.id === id);

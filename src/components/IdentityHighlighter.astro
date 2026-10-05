@@ -1,0 +1,39 @@
+---
+// Global progressive enhancement: once a visitor has chosen "this is me"
+// (stored in localStorage by FollowMeWidget), highlight their own row wherever
+// a standings list is rendered. Standings render correctly without this — the
+// script only decorates the matching row, so it degrades gracefully.
+---
+
+<script>
+  const STORAGE_KEY = "tm:me";
+
+  const readMe = (): string | null => {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  };
+
+  const apply = () => {
+    const me = readMe();
+    document.querySelectorAll<HTMLElement>("[data-me-row]").forEach((row) => {
+      const isMe = me !== null && row.dataset.playerId === me;
+      row.classList.toggle("is-me", isMe);
+      if (isMe) {
+        row.setAttribute("aria-current", "true");
+      } else {
+        row.removeAttribute("aria-current");
+      }
+    });
+  };
+
+  apply();
+
+  // Re-apply when the picker changes identity (same tab) or another tab does.
+  window.addEventListener("tm:identity-change", apply);
+  window.addEventListener("storage", (event) => {
+    if (event.key === STORAGE_KEY) apply();
+  });
+</script>

@@ -33,6 +33,43 @@
   --color-dot-red: #ff5f56;
   --color-dot-amber: #ffbd2e;
   --color-dot-green: #27c93f;
+
+  /* Tint of the faux CRT scanlines, overridden per theme below. */
+  --color-scanline: rgba(255, 255, 255, 0.015);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Light theme — a "paper terminal" counterpart.                     */
+/*  Only the design tokens are re-pointed here; because every Tailwind */
+/*  utility compiles to var(--color-*), flipping these values recolours */
+/*  the entire UI. Dark remains the default (no attribute / data-theme  */
+/*  ="dark"); light activates via [data-theme="light"] on <html>.      */
+/* ------------------------------------------------------------------ */
+:root[data-theme="light"] {
+  --color-term-bg: #f4f6f3;
+  --color-term-panel: #ffffff;
+  --color-term-panel-2: #eef1ee;
+  --color-grid: #c3ccc6;
+  --color-grid-soft: #dfe4e0;
+
+  /* Ink ramp inverted for dark-on-light, keeping AA contrast and the
+     primary > secondary > faint hierarchy. */
+  --color-ink: #11181d; /* primary text   — ~16:1 on term-bg */
+  --color-ink-dim: #41505b; /* secondary/body — ~8.5:1 on term-bg */
+  --color-ink-faint: #5d6b74; /* captions/meta  — ~5.4:1 on term-bg */
+
+  /* Accents darkened so coloured text/borders stay legible on light
+     surfaces while reading as the same hues. */
+  --color-acid: #0a8f4d; /* primary terminal green */
+  --color-acid-dim: #0b7a42;
+  --color-amber: #b26a00; /* warnings / live */
+  --color-magenta: #c21f98; /* accents / titles */
+  --color-cyan: #0b7aa8; /* links / info */
+  --color-danger: #d4352b;
+
+  --color-scanline: rgba(16, 24, 32, 0.02);
+
+  color-scheme: light;
 }
 
 html {
@@ -71,8 +108,8 @@ body::before {
   z-index: 60;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.015) 0px,
-    rgba(255, 255, 255, 0.015) 1px,
+    var(--color-scanline) 0px,
+    var(--color-scanline) 1px,
     transparent 1px,
     transparent 3px
   );
@@ -132,6 +169,112 @@ body::before {
 
 .live-dot {
   animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+/* ----------------------- theme toggle icon ------------------------ */
+/* The nav toggle shows a single glyph for the active theme — a moon in
+   dark mode, a sun in light mode. Driven purely by the data-theme attr
+   so it is correct on first paint, with no JS flash. */
+.theme-icon-sun {
+  display: none;
+}
+:root[data-theme="light"] .theme-icon-moon {
+  display: none;
+}
+:root[data-theme="light"] .theme-icon-sun {
+  display: inline-flex;
+}
+
+/* ------------------------- countdown urgency ---------------------- */
+/* Escalating treatment as a deadline approaches. Descendant selectors
+   here outrank the digits' default `.text-acid`/`.text-glow` utilities. */
+.countdown.is-urgent .cd-digit {
+  color: var(--color-amber);
+  text-shadow: 0 0 14px rgba(255, 180, 84, 0.5);
+}
+.countdown.is-urgent .cd-cell {
+  border-color: color-mix(in srgb, var(--color-amber) 45%, transparent);
+  background-color: color-mix(in srgb, var(--color-amber) 7%, transparent);
+}
+.countdown.is-urgent .cd-warn {
+  color: var(--color-amber);
+}
+
+.countdown.is-critical .cd-digit {
+  color: var(--color-danger);
+  text-shadow: 0 0 16px rgba(255, 95, 86, 0.55);
+}
+.countdown.is-critical .cd-cell {
+  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+  background-color: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  animation: cd-urgent-pulse 1.3s ease-in-out infinite;
+}
+.countdown.is-critical .cd-warn {
+  color: var(--color-danger);
+}
+
+@keyframes cd-urgent-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 95, 86, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(255, 95, 86, 0);
+  }
+}
+
+/* --------------------- sortable standings table ------------------- */
+/* The idle sort arrow (↕) stays faint; the active column's button and
+   arrow are promoted to the terminal green via its aria-sort state. */
+[data-sortable-standings] .cd-sort-arrow {
+  color: var(--color-ink-faint);
+  opacity: 0.6;
+}
+[data-sortable-standings] th[aria-sort="ascending"] button[data-sort-key],
+[data-sortable-standings] th[aria-sort="descending"] button[data-sort-key] {
+  color: var(--color-acid);
+}
+[data-sortable-standings]
+  th[aria-sort="ascending"]
+  button[data-sort-key]
+  .cd-sort-arrow,
+[data-sortable-standings]
+  th[aria-sort="descending"]
+  button[data-sort-key]
+  .cd-sort-arrow {
+  color: inherit;
+  opacity: 1;
+}
+
+/* ----------------------- task status filters ---------------------- */
+/* The selected chip is ringed in its own accent (currentColor); others
+   dim slightly on hover to signal they are interactive. */
+[data-task-filter] button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+[data-task-filter] button:not(:disabled):hover {
+  filter: brightness(1.2);
+}
+
+/* ----------------------- "this is me" highlight ------------------- */
+/* A visitor who picks their name (FollowMeWidget) gets their own row in any
+   standings list marked with `.is-me` by the global IdentityHighlighter. The
+   "YOU" badge stays hidden until then, so lists read correctly without JS. */
+.me-badge {
+  display: none;
+}
+.is-me .me-badge {
+  display: inline-flex;
+}
+
+tr[data-me-row].is-me {
+  background-color: color-mix(in srgb, var(--color-acid) 9%, transparent);
+  box-shadow: inset 3px 0 0 0 var(--color-acid);
+}
+a[data-me-row].is-me {
+  border-color: var(--color-acid);
+  background-color: color-mix(in srgb, var(--color-acid) 9%, transparent);
+  box-shadow: inset 2px 0 0 0 var(--color-acid);
 }
 
 @media (prefers-reduced-motion: reduce) {

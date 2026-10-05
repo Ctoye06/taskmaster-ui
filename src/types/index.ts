@@ -182,6 +182,38 @@ export interface CommandPaletteItem {
   keywords?: string;
 }
 
+/** The player a follower needs to overtake next (directly ahead of them). */
+export interface FollowRival {
+  id: string;
+  name: string;
+  rank: number;
+  /** Link to the rival's profile page. */
+  href: string;
+  /** Points the rival is ahead by (0 when level on points but ahead on tie-break). */
+  gap: number;
+}
+
+/**
+ * One player's at-a-glance standing for the "this is me" follow widget. The
+ * visitor's chosen identity is resolved on the client (localStorage), so the
+ * widget ships every player's row and renders whichever one was picked.
+ */
+export interface FollowStanding {
+  id: string;
+  name: string;
+  initials: string;
+  rank: number;
+  points: number;
+  wins: number;
+  tasksCompleted: number;
+  /** Link to this player's profile page. */
+  href: string;
+  /** True when this player tops the standings (no one to overtake). */
+  isLeader: boolean;
+  /** The player directly ahead on the standings, if any. */
+  rival?: FollowRival;
+}
+
 export interface CompetitionStats {
   totalPlayers: number;
   tasksCompleted: number;

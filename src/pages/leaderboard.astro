@@ -138,13 +138,13 @@ const leader = first;
           leaderboard --all
         </h2>
         <span class="text-[11px] text-ink-faint">
-          {leaderboard.length} players
+          {leaderboard.length} players &middot; tap a column to sort
         </span>
       </div>
 
       <TerminalWindow
         title="~/leaderboard.tsv"
-        meta="sorted by pts"
+        meta="sort: rank ▲"
         bodyClass="p-0 sm:p-0"
       >
         <StandingsTable rows={leaderboard} />

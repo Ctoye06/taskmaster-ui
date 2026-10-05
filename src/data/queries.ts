@@ -3,6 +3,7 @@ import type {
   CommandPaletteItem,
   CompareOpponent,
   CompetitionStats,
+  FollowStanding,
   LeaderboardRow,
   Player,
   PlayerCompareOptions,
@@ -307,6 +308,39 @@ export function getPlayerInitials(player: Player): string {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+/**
+ * Per-player "this is me" standings for the homepage follow widget. The
+ * visitor's identity is resolved on the client, so every player's row ships
+ * up front. Each entry carries the player's current standing plus the rival
+ * directly ahead of them (the one to overtake next).
+ */
+export function getFollowStandings(): FollowStanding[] {
+  const leaderboard = getLeaderboard();
+  return leaderboard.map((row, index) => {
+    const ahead = leaderboard[index - 1];
+    return {
+      id: row.player.id,
+      name: row.player.name,
+      initials: getPlayerInitials(row.player),
+      rank: row.rank,
+      points: row.points,
+      wins: row.wins,
+      tasksCompleted: row.tasksCompleted,
+      href: withBase(`/players/${row.player.id}`),
+      isLeader: index === 0,
+      rival: ahead
+        ? {
+            id: ahead.player.id,
+            name: ahead.player.name,
+            rank: ahead.rank,
+            href: withBase(`/players/${ahead.player.id}`),
+            gap: ahead.points - row.points,
+          }
+        : undefined,
+    };
+  });
 }
 
 /**

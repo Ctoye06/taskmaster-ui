@@ -1,0 +1,353 @@
+---
+import type { FollowStanding } from "../types";
+
+interface Props {
+  /** Every player's standing; the active identity is resolved on the client. */
+  standings: FollowStanding[];
+  class?: string;
+}
+
+const { standings, class: className = "" } = Astro.props;
+
+// Alphabetical options so a visitor can find themselves quickly in the picker.
+const options = standings
+  .map((s) => ({ id: s.id, name: s.name }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+// Data island consumed by the client script to render whichever player the
+// visitor picked. Escape "<" so a name can never break out of the script tag.
+const dataJson = JSON.stringify(standings).replace(/</g, "\\u003c");
+
+const btnPrimary =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-acid bg-acid/10 px-4 py-2 text-xs font-bold tracking-widest text-acid transition-colors hover:bg-acid hover:text-term-bg focus-visible:outline-none";
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-3 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
+---
+
+<section
+  data-follow-widget
+  class:list={[
+    "overflow-hidden rounded-xl border border-grid bg-term-panel/60 shadow-[0_0_40px_-22px_rgba(62,240,139,0.3)]",
+    className,
+  ]}
+>
+  <header
+    class="flex items-center gap-3 border-b border-grid bg-term-bg/60 px-4 py-2.5"
+  >
+    <span class="flex items-center gap-1.5" aria-hidden="true">
+      <span class="h-3 w-3 rounded-full bg-dot-red"></span>
+      <span class="h-3 w-3 rounded-full bg-dot-amber"></span>
+      <span class="h-3 w-3 rounded-full bg-dot-green"></span>
+    </span>
+    <span class="truncate text-xs text-ink-dim">~/whoami</span>
+  </header>
+
+  <div class="p-4 sm:p-6" aria-live="polite">
+    <!-- ======================= PICK STATE ======================= -->
+    <div data-follow-pick>
+      <p class="text-sm leading-relaxed text-ink-dim">
+        <span class="text-acid">//</span> Competing this season? Pick your name to
+        highlight yourself on every leaderboard and track your next rival.
+      </p>
+
+      <form
+        data-follow-form
+        class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"
+      >
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <label
+            for="follow-select"
+            class="text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+          >
+            select your name
+          </label>
+          <select
+            id="follow-select"
+            data-follow-select
+            required
+            class="w-full rounded-md border border-grid bg-term-bg px-3 py-2 text-sm text-ink focus-visible:border-acid focus-visible:outline-none"
+          >
+            <option value="" selected disabled>whoami…</option>
+            {
+              options.map((option) => (
+                <option value={option.id}>{option.name}</option>
+              ))
+            }
+          </select>
+        </div>
+
+        <button type="submit" data-follow-confirm class={btnPrimary}>
+          [ THIS IS ME ]
+        </button>
+      </form>
+    </div>
+
+    <!-- ======================== ME STATE ======================== -->
+    <div data-follow-me hidden>
+      <div class="flex items-center gap-3 sm:gap-4">
+        <span
+          data-me-initials
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-acid-dim bg-acid/5 text-base font-extrabold text-acid sm:h-14 sm:w-14 sm:text-lg"
+          aria-hidden="true"></span>
+        <div class="min-w-0 flex-1">
+          <p
+            class="text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+          >
+            following
+          </p>
+          <p
+            data-me-name
+            class="truncate text-xl font-extrabold text-ink sm:text-2xl"
+          >
+          </p>
+        </div>
+        <span
+          class="shrink-0 rounded-md border border-magenta/40 bg-magenta/5 px-2.5 py-1.5 text-center"
+        >
+          <span
+            class="block text-[9px] tracking-[0.2em] text-ink-faint uppercase"
+          >
+            rank
+          </span>
+          <span
+            data-me-rank
+            class="block text-lg font-extrabold tabular-nums text-magenta"
+          >
+          </span>
+        </span>
+      </div>
+
+      <!-- Points / wins / played -->
+      <dl class="mt-5 grid grid-cols-3 gap-3">
+        <div
+          class="rounded-md border border-grid bg-term-bg/50 p-3 text-center"
+        >
+          <dd
+            data-me-points
+            class="text-2xl font-extrabold tabular-nums text-acid"
+          >
+          </dd>
+          <dt
+            class="mt-1 text-[10px] tracking-[0.15em] text-ink-faint uppercase"
+          >
+            points
+          </dt>
+        </div>
+        <div
+          class="rounded-md border border-grid bg-term-bg/50 p-3 text-center"
+        >
+          <dd
+            data-me-wins
+            class="text-2xl font-extrabold tabular-nums text-cyan"
+          >
+          </dd>
+          <dt
+            class="mt-1 text-[10px] tracking-[0.15em] text-ink-faint uppercase"
+          >
+            wins
+          </dt>
+        </div>
+        <div
+          class="rounded-md border border-grid bg-term-bg/50 p-3 text-center"
+        >
+          <dd
+            data-me-played
+            class="text-2xl font-extrabold tabular-nums text-ink"
+          >
+          </dd>
+          <dt
+            class="mt-1 text-[10px] tracking-[0.15em] text-ink-faint uppercase"
+          >
+            played
+          </dt>
+        </div>
+      </dl>
+
+      <!-- Next rival -->
+      <div class="mt-4 rounded-lg border border-grid bg-term-bg/40 p-4">
+        <p
+          class="text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
+        >
+          next rival
+        </p>
+
+        <div data-me-rival class="mt-2 flex items-center gap-3">
+          <span class="text-amber" aria-hidden="true">&gt;</span>
+          <p class="min-w-0 flex-1 text-sm text-ink-dim">
+            Catch <a
+              data-me-rival-link
+              href="#"
+              class="font-bold text-ink hover:text-acid">—</a
+            >
+            <span data-me-rival-rank class="text-ink-faint"></span> —
+            <span data-me-rival-gap class="font-semibold text-amber"></span>
+          </p>
+        </div>
+
+        <p data-me-leader hidden class="mt-2 text-sm text-ink-dim">
+          <span aria-hidden="true">🏆</span>
+          <span class="font-semibold text-acid">Top of the table.</span> Nobody ahead
+          — hold the line.
+        </p>
+      </div>
+
+      <!-- Actions -->
+      <div class="mt-5 flex flex-wrap items-center gap-3">
+        <a data-me-profile href="#" class={btnPrimary}>[ MY PROFILE ]</a>
+        <button type="button" data-follow-change class={btnGhost}>
+          not you?
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" data-follow-data set:html={dataJson} />
+</section>
+
+<script>
+  interface FollowRival {
+    id: string;
+    name: string;
+    rank: number;
+    href: string;
+    gap: number;
+  }
+
+  interface FollowStanding {
+    id: string;
+    name: string;
+    initials: string;
+    rank: number;
+    points: number;
+    wins: number;
+    tasksCompleted: number;
+    href: string;
+    isLeader: boolean;
+    rival?: FollowRival;
+  }
+
+  const STORAGE_KEY = "tm:me";
+
+  document
+    .querySelectorAll<HTMLElement>("[data-follow-widget]")
+    .forEach((root) => {
+      const dataEl =
+        root.querySelector<HTMLScriptElement>("[data-follow-data]");
+      const pick = root.querySelector<HTMLElement>("[data-follow-pick]");
+      const me = root.querySelector<HTMLElement>("[data-follow-me]");
+      const form = root.querySelector<HTMLFormElement>("[data-follow-form]");
+      const select = root.querySelector<HTMLSelectElement>(
+        "[data-follow-select]",
+      );
+      if (!dataEl || !pick || !me || !form || !select) return;
+
+      let standings: FollowStanding[] = [];
+      try {
+        standings = JSON.parse(dataEl.textContent ?? "[]");
+      } catch {
+        return;
+      }
+      const byId = new Map(standings.map((s) => [s.id, s]));
+
+      const read = (): string | null => {
+        try {
+          return localStorage.getItem(STORAGE_KEY);
+        } catch {
+          return null;
+        }
+      };
+      const write = (id: string) => {
+        try {
+          localStorage.setItem(STORAGE_KEY, id);
+        } catch {
+          // Storage unavailable (private mode, blocked) — identity is session-only.
+        }
+      };
+
+      const q = (sel: string) => me.querySelector<HTMLElement>(sel);
+
+      const renderMe = (s: FollowStanding) => {
+        const initials = q("[data-me-initials]");
+        if (initials) initials.textContent = s.initials;
+        const name = q("[data-me-name]");
+        if (name) name.textContent = s.name;
+        const rank = q("[data-me-rank]");
+        if (rank) rank.textContent = `#${s.rank}`;
+        const points = q("[data-me-points]");
+        if (points) points.textContent = String(s.points);
+        const wins = q("[data-me-wins]");
+        if (wins) wins.textContent = String(s.wins);
+        const played = q("[data-me-played]");
+        if (played) played.textContent = String(s.tasksCompleted);
+
+        const profile = q("[data-me-profile]") as HTMLAnchorElement | null;
+        if (profile) profile.href = s.href;
+
+        const rivalBlock = q("[data-me-rival]");
+        const leaderBlock = q("[data-me-leader]");
+        if (s.rival && !s.isLeader) {
+          const link = q("[data-me-rival-link]") as HTMLAnchorElement | null;
+          if (link) {
+            link.textContent = s.rival.name;
+            link.href = s.rival.href;
+          }
+          const rrank = q("[data-me-rival-rank]");
+          if (rrank) rrank.textContent = `#${s.rival.rank}`;
+          const gap = q("[data-me-rival-gap]");
+          if (gap) {
+            gap.textContent =
+              s.rival.gap > 0
+                ? `${s.rival.gap} pt${s.rival.gap === 1 ? "" : "s"} ahead`
+                : "level on points";
+          }
+          if (rivalBlock) rivalBlock.hidden = false;
+          if (leaderBlock) leaderBlock.hidden = true;
+        } else {
+          if (rivalBlock) rivalBlock.hidden = true;
+          if (leaderBlock) leaderBlock.hidden = false;
+        }
+      };
+
+      let forcePick = false;
+
+      const render = () => {
+        const id = read();
+        const standing = id ? byId.get(id) : undefined;
+        if (standing && !forcePick) {
+          renderMe(standing);
+          pick.hidden = true;
+          me.hidden = false;
+        } else {
+          if (standing) select.value = standing.id;
+          pick.hidden = false;
+          me.hidden = true;
+        }
+      };
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!select.value) return;
+        write(select.value);
+        forcePick = false;
+        render();
+        window.dispatchEvent(new CustomEvent("tm:identity-change"));
+      });
+
+      root
+        .querySelector<HTMLButtonElement>("[data-follow-change]")
+        ?.addEventListener("click", () => {
+          forcePick = true;
+          render();
+          select.focus();
+        });
+
+      window.addEventListener("storage", (event) => {
+        if (event.key === STORAGE_KEY) {
+          forcePick = false;
+          render();
+        }
+      });
+
+      render();
+    });
+</script>

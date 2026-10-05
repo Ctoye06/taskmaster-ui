@@ -18,6 +18,26 @@ const initial = {
   seconds: totalSeconds % 60,
 };
 
+// Urgency tiers, mirrored in the client tick below so the no-JS render and
+// the live render stay visually consistent.
+const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
+const urgency: "normal" | "urgent" | "critical" | "done" =
+  diff <= 0
+    ? "done"
+    : diff <= HOUR_MS
+      ? "critical"
+      : diff <= DAY_MS
+        ? "urgent"
+        : "normal";
+
+const warnText =
+  urgency === "critical"
+    ? "> FINAL HOUR"
+    : urgency === "urgent"
+      ? "> FINAL DAY"
+      : "";
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 const units: { key: keyof typeof initial; label: string }[] = [
@@ -29,7 +49,12 @@ const units: { key: keyof typeof initial; label: string }[] = [
 ---
 
 <div
-  class:list={["countdown", className]}
+  class:list={[
+    "countdown",
+    className,
+    urgency === "urgent" && "is-urgent",
+    urgency === "critical" && "is-critical",
+  ]}
   data-deadline={deadline}
   role="timer"
   aria-label="Time remaining until the deadline"
@@ -37,10 +62,10 @@ const units: { key: keyof typeof initial; label: string }[] = [
   <div class="grid grid-cols-4 gap-2 sm:gap-3">
     {
       units.map((unit) => (
-        <div class="rounded-md border border-grid bg-term-bg/70 px-2 py-3 text-center">
+        <div class="cd-cell rounded-md border border-grid bg-term-bg/70 px-2 py-3 text-center">
           <div
             data-unit={unit.key}
-            class="text-2xl font-extrabold tabular-nums text-acid text-glow sm:text-4xl"
+            class="cd-digit text-2xl font-extrabold tabular-nums text-acid text-glow sm:text-4xl"
           >
             {pad(initial[unit.key])}
           </div>
@@ -52,8 +77,16 @@ const units: { key: keyof typeof initial; label: string }[] = [
     }
   </div>
   <p
+    data-countdown-warn
+    hidden={urgency !== "urgent" && urgency !== "critical"}
+    class="cd-warn mt-3 flex items-center justify-center gap-2 text-center text-xs font-bold tracking-[0.3em] uppercase"
+  >
+    <span aria-hidden="true">&#9888;</span><span data-warn-text>{warnText}</span
+    >
+  </p>
+  <p
     data-countdown-done
-    hidden
+    hidden={urgency !== "done"}
     class="mt-3 text-center text-sm font-bold tracking-widest text-amber"
   >
     &gt; TIME'S UP
@@ -61,6 +94,9 @@ const units: { key: keyof typeof initial; label: string }[] = [
 </div>
 
 <script>
+  const HOUR_MS = 3_600_000;
+  const DAY_MS = 86_400_000;
+
   function pad(n: number): string {
     return String(n).padStart(2, "0");
   }
@@ -76,6 +112,18 @@ const units: { key: keyof typeof initial; label: string }[] = [
       seconds: root.querySelector<HTMLElement>('[data-unit="seconds"]'),
     };
     const doneEl = root.querySelector<HTMLElement>("[data-countdown-done]");
+    const warnEl = root.querySelector<HTMLElement>("[data-countdown-warn]");
+    const warnText = root.querySelector<HTMLElement>("[data-warn-text]");
+
+    function setWarn(text: string | null) {
+      if (!warnEl) return;
+      if (text) {
+        if (warnText) warnText.textContent = text;
+        warnEl.removeAttribute("hidden");
+      } else {
+        warnEl.setAttribute("hidden", "");
+      }
+    }
 
     function tick() {
       const diff = Math.max(0, deadline - Date.now());
@@ -88,7 +136,15 @@ const units: { key: keyof typeof initial; label: string }[] = [
         cells.minutes.textContent = pad(Math.floor((total % 3600) / 60));
       if (cells.seconds) cells.seconds.textContent = pad(total % 60);
 
+      const critical = diff > 0 && diff <= HOUR_MS;
+      const urgent = diff > HOUR_MS && diff <= DAY_MS;
+      root.classList.toggle("is-critical", critical);
+      root.classList.toggle("is-urgent", urgent);
+      setWarn(critical ? "> FINAL HOUR" : urgent ? "> FINAL DAY" : null);
+
       if (diff <= 0) {
+        root.classList.remove("is-urgent", "is-critical");
+        setWarn(null);
         doneEl?.removeAttribute("hidden");
         clearInterval(timer);
       }
