@@ -13,7 +13,7 @@ interface Props {
 }
 
 const {
-  title = "EAYL TASKMASTER // The Ultimate Academy Challenge",
+  title = "EAYL Taskmaster",
   description = "16 weeks. 25 players. One winner. The Engineering Academy Taskmaster challenge.",
 } = Astro.props;
 
@@ -40,7 +40,6 @@ const whatsNew = getWhatsNew();
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href={withBase("/favicon.svg")} />
-    <link rel="icon" href={withBase("/favicon.ico")} />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#080b10" />
