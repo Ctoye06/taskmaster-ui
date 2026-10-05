@@ -318,6 +318,46 @@ export function getPlayerInitials(player: Player): string {
     .toUpperCase();
 }
 
+// Number of generated avatar SVGs living in `public/avatars/player-NN.svg`.
+const PLAYER_ICON_COUNT = 25;
+
+// FNV-1a hash — small, stable, and well-distributed for short id strings.
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+// Pseudo-random but deterministic avatar assignment. Seeding from the player
+// id keeps each player on the same icon across every page, and probing to the
+// next free slot keeps assignments unique while players <= available icons.
+const playerIconIndex: Map<string, number> = (() => {
+  const assignment = new Map<string, number>();
+  const used = new Set<number>();
+  // Sort by id so the mapping is independent of the roster array order.
+  const ordered = [...players].sort((a, b) => a.id.localeCompare(b.id));
+  for (const player of ordered) {
+    let index = hashString(player.id) % PLAYER_ICON_COUNT;
+    while (used.has(index) && used.size < PLAYER_ICON_COUNT) {
+      index = (index + 1) % PLAYER_ICON_COUNT;
+    }
+    used.add(index);
+    assignment.set(player.id, index);
+  }
+  return assignment;
+})();
+
+/** Root-relative path to the avatar SVG assigned to this player. */
+export function getPlayerIcon(player: Player): string {
+  const index =
+    playerIconIndex.get(player.id) ??
+    hashString(player.id) % PLAYER_ICON_COUNT;
+  return `/avatars/player-${String(index + 1).padStart(2, "0")}.svg`;
+}
+
 // Tasks that have at least one recorded score, ascending by week number.
 // This is the shared x-axis for every points-over-time chart.
 function getScoredTasks(): Task[] {
@@ -557,7 +597,7 @@ export function getFollowStandings(): FollowStanding[] {
     return {
       id: row.player.id,
       name: row.player.name,
-      initials: getPlayerInitials(row.player),
+      icon: withBase(getPlayerIcon(row.player)),
       rank: row.rank,
       points: row.points,
       wins: row.wins,

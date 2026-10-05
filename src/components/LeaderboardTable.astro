@@ -1,7 +1,7 @@
 ---
 import type { LeaderboardRow } from "../types";
-import { getPlayerInitials } from "../data/queries";
 import { withBase } from "../lib/url";
+import PlayerAvatar from "./PlayerAvatar.astro";
 
 interface Props {
   rows: LeaderboardRow[];
@@ -43,12 +43,7 @@ const accent = (rank: number) => {
             )}
           </span>
 
-          <span
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-xs font-bold text-ink-dim"
-            aria-hidden="true"
-          >
-            {getPlayerInitials(row.player)}
-          </span>
+          <PlayerAvatar player={row.player} class="h-9 w-9 rounded" />
 
           <span class="min-w-0 flex-1">
             <span class="flex items-center gap-1.5">

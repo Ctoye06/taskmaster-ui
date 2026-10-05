@@ -10,7 +10,7 @@ export interface Player {
   name: string;
   /** Optional team grouping, reserved for a future feature. */
   team?: string;
-  /** Optional avatar image. When absent, initials are rendered. */
+  /** Optional avatar image. When absent, a generated icon is rendered. */
   avatarUrl?: string;
 }
 
@@ -205,7 +205,8 @@ export interface FollowRival {
 export interface FollowStanding {
   id: string;
   name: string;
-  initials: string;
+  /** Path to the player's assigned avatar SVG (already base-prefixed). */
+  icon: string;
   rank: number;
   points: number;
   wins: number;

@@ -1,7 +1,7 @@
 ---
 import type { LeaderboardRow } from "../types";
-import { getPlayerInitials } from "../data/queries";
 import { withBase } from "../lib/url";
+import PlayerAvatar from "./PlayerAvatar.astro";
 
 interface Props {
   rows: LeaderboardRow[];
@@ -221,12 +221,7 @@ const avgSortValue = (row: LeaderboardRow) =>
                 href={withBase(`/players/${row.player.id}`)}
                 class="flex items-center gap-3"
               >
-                <span
-                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-[11px] font-bold text-ink-dim"
-                  aria-hidden="true"
-                >
-                  {getPlayerInitials(row.player)}
-                </span>
+                <PlayerAvatar player={row.player} class="h-8 w-8 rounded" />
                 <span class="min-w-0">
                   <span class="flex items-center gap-1.5">
                     <span class="min-w-0 truncate font-semibold text-ink group-hover:text-acid">

@@ -1,8 +1,8 @@
 ---
 import type { Player, PlayerComparison } from "../types";
-import { getPlayerInitials } from "../data/queries";
 import TerminalWindow from "./TerminalWindow.astro";
 import ComparisonStatRow from "./ComparisonStatRow.astro";
+import PlayerAvatar from "./PlayerAvatar.astro";
 import { withBase } from "../lib/url";
 
 interface Props {
@@ -13,9 +13,6 @@ interface Props {
 
 const { comparison, players } = Astro.props;
 const { a, b, tasks, headToHead } = comparison;
-
-const aInitials = getPlayerInitials(a.player);
-const bInitials = getPlayerInitials(b.player);
 
 const ordinal = (n: number) => {
   const s = ["th", "st", "nd", "rd"];
@@ -189,10 +186,10 @@ const cellResult = (result?: { position: number; points: number }) => result;
       headerRing("a"),
     ]}
   >
-    <span
-      class="flex h-14 w-14 items-center justify-center rounded-lg border border-grid bg-term-panel text-lg font-extrabold text-ink-dim sm:h-16 sm:w-16 sm:text-xl"
-      aria-hidden="true">{aInitials}</span
-    >
+    <PlayerAvatar
+      player={a.player}
+      class="h-14 w-14 rounded-lg sm:h-16 sm:w-16"
+    />
     <span
       class="truncate text-lg font-extrabold text-ink group-hover:text-acid sm:text-2xl"
       >{a.player.name}</span
@@ -234,10 +231,10 @@ const cellResult = (result?: { position: number; points: number }) => result;
       headerRing("b"),
     ]}
   >
-    <span
-      class="flex h-14 w-14 items-center justify-center rounded-lg border border-grid bg-term-panel text-lg font-extrabold text-ink-dim sm:h-16 sm:w-16 sm:text-xl"
-      aria-hidden="true">{bInitials}</span
-    >
+    <PlayerAvatar
+      player={b.player}
+      class="h-14 w-14 rounded-lg sm:h-16 sm:w-16"
+    />
     <span
       class="truncate text-lg font-extrabold text-ink group-hover:text-acid sm:text-2xl"
       >{b.player.name}</span

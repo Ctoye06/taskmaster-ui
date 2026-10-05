@@ -1,7 +1,7 @@
 ---
 import type { Player } from "../types";
-import { getPlayerInitials } from "../data/queries";
 import { withBase } from "../lib/url";
+import PlayerAvatar from "./PlayerAvatar.astro";
 
 interface Props {
   /** Uppercase card title, e.g. "Biggest climber". */
@@ -88,12 +88,7 @@ const accentBorder: Record<NonNullable<Props["accent"]>, string> = {
         href={withBase(`/players/${player.id}`)}
         class="group mt-3 flex items-center gap-2.5"
       >
-        <span
-          class="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-[11px] font-bold text-ink-dim"
-          aria-hidden="true"
-        >
-          {getPlayerInitials(player)}
-        </span>
+        <PlayerAvatar player={player} class="h-9 w-9 rounded" />
         <span class="min-w-0">
           <span class="block truncate font-semibold text-ink group-hover:text-acid">
             {player.name}

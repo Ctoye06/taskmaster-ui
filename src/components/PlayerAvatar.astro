@@ -1,0 +1,30 @@
+---
+import type { Player } from "../types";
+import { getPlayerIcon } from "../data/queries";
+import { withBase } from "../lib/url";
+
+interface Props {
+  player: Player;
+  /** Sizing / rounding utilities, merged last so callers control dimensions. */
+  class?: string;
+}
+
+const { player, class: className = "h-9 w-9 rounded" } = Astro.props;
+
+// Decorative: the player's name is always rendered alongside the avatar.
+const src = withBase(getPlayerIcon(player));
+---
+
+<img
+  src={src}
+  alt=""
+  aria-hidden="true"
+  loading="lazy"
+  decoding="async"
+  width="64"
+  height="64"
+  class:list={[
+    "shrink-0 border border-grid bg-term-bg object-cover",
+    className,
+  ]}
+/>

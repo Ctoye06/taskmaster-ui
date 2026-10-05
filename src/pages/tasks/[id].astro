@@ -9,12 +9,12 @@ import ScoreBadge from "../../components/ScoreBadge.astro";
 import TaskPager from "../../components/TaskPager.astro";
 import ShareButton from "../../components/ShareButton.astro";
 import BackLink from "../../components/BackLink.astro";
+import PlayerAvatar from "../../components/PlayerAvatar.astro";
 import { tasks } from "../../data/tasks";
 import {
   getTaskSummary,
   getTaskResults,
   getTaskPager,
-  getPlayerInitials,
   getRecapTaskIds,
 } from "../../data/queries";
 
@@ -309,12 +309,10 @@ const medal = (position: number) =>
                         href={withBase(`/players/${row.player.id}`)}
                         class="group inline-flex items-center gap-3"
                       >
-                        <span
-                          class="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-grid bg-term-bg text-[11px] font-bold text-ink-dim"
-                          aria-hidden="true"
-                        >
-                          {getPlayerInitials(row.player)}
-                        </span>
+                        <PlayerAvatar
+                          player={row.player}
+                          class="h-8 w-8 rounded"
+                        />
                         <span class="font-semibold text-ink group-hover:text-acid">
                           {row.player.name}
                         </span>

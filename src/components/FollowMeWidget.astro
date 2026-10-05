@@ -85,10 +85,14 @@ const btnGhost =
     <!-- ======================== ME STATE ======================== -->
     <div data-follow-me hidden>
       <div class="flex items-center gap-3 sm:gap-4">
-        <span
-          data-me-initials
-          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-acid-dim bg-acid/5 text-base font-extrabold text-acid sm:h-14 sm:w-14 sm:text-lg"
-          aria-hidden="true"></span>
+        <img
+          data-me-icon
+          alt=""
+          aria-hidden="true"
+          width="64"
+          height="64"
+          class="h-12 w-12 shrink-0 rounded-lg border border-acid-dim bg-term-bg object-cover sm:h-14 sm:w-14"
+        />
         <div class="min-w-0 flex-1">
           <p
             class="text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase"
@@ -216,7 +220,7 @@ const btnGhost =
   interface FollowStanding {
     id: string;
     name: string;
-    initials: string;
+    icon: string;
     rank: number;
     points: number;
     wins: number;
@@ -267,8 +271,8 @@ const btnGhost =
       const q = (sel: string) => me.querySelector<HTMLElement>(sel);
 
       const renderMe = (s: FollowStanding) => {
-        const initials = q("[data-me-initials]");
-        if (initials) initials.textContent = s.initials;
+        const icon = q("[data-me-icon]") as HTMLImageElement | null;
+        if (icon) icon.src = s.icon;
         const name = q("[data-me-name]");
         if (name) name.textContent = s.name;
         const rank = q("[data-me-rank]");
