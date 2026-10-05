@@ -122,11 +122,23 @@ const medal = (position: number) =>
             </div>
           ) : (
             <div>
-              {task.brief && (
-                <blockquote class="border-l-2 border-acid pl-4 text-lg leading-relaxed text-ink sm:text-xl">
-                  {task.brief}
-                </blockquote>
-              )}
+              {task.brief &&
+                (Array.isArray(task.brief) ? (
+                  <ul class="space-y-3 border-l-2 border-acid pl-4">
+                    {task.brief.map((point) => (
+                      <li class="flex gap-3 text-lg leading-relaxed text-ink sm:text-xl">
+                        <span class="shrink-0 text-acid" aria-hidden="true">
+                          &gt;
+                        </span>
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <blockquote class="border-l-2 border-acid pl-4 text-lg leading-relaxed text-ink sm:text-xl">
+                    {task.brief}
+                  </blockquote>
+                ))}
               <p class="mt-6 text-sm leading-relaxed text-ink-dim">
                 {task.description}
               </p>

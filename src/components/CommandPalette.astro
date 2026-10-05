@@ -101,6 +101,8 @@ const { items, class: className = "" } = Astro.props;
 />
 
 <script>
+  import { applyTheme, type ThemeName } from "../lib/theme";
+
   interface PaletteItem {
     id: string;
     label: string;
@@ -154,9 +156,106 @@ const { items, class: className = "" } = Astro.props;
 
     let currentSecret: Secret | null = null;
 
+    // ── Easter-egg CRT theme switcher ──────────────────────────────────────
+    // Typing `theme amber` (and friends) in this prompt recolours the whole
+    // UI to an alternate phosphor. Hidden on purpose: there is no visible
+    // control, only this command. Aliases keep it forgiving.
+    const THEME_ALIASES: Record<string, ThemeName> = {
+      green: "dark",
+      dark: "dark",
+      p1: "dark",
+      default: "dark",
+      light: "light",
+      paper: "light",
+      day: "light",
+      amber: "amber",
+      gold: "amber",
+      orange: "amber",
+      p3: "amber",
+      cyan: "cyan",
+      ice: "cyan",
+      blue: "cyan",
+      magenta: "magenta",
+      pink: "magenta",
+      synthwave: "magenta",
+      vapor: "magenta",
+      vaporwave: "magenta",
+    };
+    const THEME_LABELS: Record<ThemeName, string> = {
+      dark: "green phosphor",
+      light: "paper terminal",
+      amber: "amber phosphor",
+      cyan: "ice phosphor",
+      magenta: "synthwave",
+    };
+
+    const eggToast = (
+      msg: string,
+      tone: "acid" | "magenta" | "amber" = "acid",
+    ) =>
+      (
+        window as unknown as {
+          __eggToast?: (m: string, t?: "acid" | "magenta" | "amber") => void;
+        }
+      ).__eggToast?.(msg, tone);
+
+    function resolveTheme(raw: string, q: string): Secret {
+      const arg = q.replace(/^(theme|crt|phosphor)\s*/, "").trim();
+
+      if (!arg || arg === "list" || arg === "ls" || arg === "help") {
+        return {
+          echo: raw,
+          lines: [
+            "CRT phosphor bank — pick your glass:",
+            "  theme green     P1 · the original (default)",
+            "  theme amber     P3 · warm monochrome",
+            "  theme cyan      ice · cold cathode",
+            "  theme magenta   synthwave",
+            "  theme light     paper terminal",
+            "",
+            "> e.g. 'theme amber', then press ↵",
+          ],
+        };
+      }
+
+      const target = THEME_ALIASES[arg];
+      if (!target) {
+        return {
+          echo: raw,
+          lines: [
+            `! unknown phosphor '${arg}'.`,
+            "> try: green · amber · cyan · magenta · light",
+          ],
+        };
+      }
+
+      return {
+        echo: raw,
+        lines: [`> glass: ${THEME_LABELS[target]}`, "> press ↵ to apply."],
+        onEnter: () => {
+          applyTheme(target);
+          eggToast(
+            `CRT GLASS → ${THEME_LABELS[target].toUpperCase()}`,
+            "amber",
+          );
+        },
+      };
+    }
+
     function resolveSecret(raw: string): Secret | null {
       const q = raw.toLowerCase();
       if (!q) return null;
+
+      if (
+        q === "theme" ||
+        q.startsWith("theme ") ||
+        q === "crt" ||
+        q.startsWith("crt ") ||
+        q === "phosphor" ||
+        q.startsWith("phosphor ")
+      ) {
+        return resolveTheme(raw, q);
+      }
 
       if (q === "echo" || q.startsWith("echo ")) {
         return { echo: raw, lines: [raw.slice(4).trim()] };

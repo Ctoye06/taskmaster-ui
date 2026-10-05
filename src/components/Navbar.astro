@@ -197,6 +197,15 @@ const isActive = (href: string) => {
 </header>
 
 <script>
+  import {
+    applyTheme,
+    getActiveTheme,
+    isTheme,
+    THEME_CHANGE_EVENT,
+    THEME_META_COLOR,
+    type ThemeName,
+  } from "../lib/theme";
+
   const toggle = document.getElementById("nav-toggle");
   const menu = document.getElementById("mobile-menu");
   const label = document.getElementById("nav-toggle-label");
@@ -207,36 +216,35 @@ const isActive = (href: string) => {
     if (label) label.textContent = open ? "close" : "menu";
   });
 
-  // ---- Light / dark theme toggle -------------------------------------
-  const root = document.documentElement;
+  // ---- Theme toggle --------------------------------------------------
+  // The nav button is the quick dark/light switch; the exotic CRT phosphor
+  // themes are summoned from the command palette. This widget just reflects
+  // whatever theme is active — including those palette-triggered changes —
+  // by listening for the shared theme-change event.
   const themeMeta = document.querySelector('meta[name="theme-color"]');
   const stateLabels = document.querySelectorAll("[data-theme-state]");
 
-  const metaColors = { dark: "#080b10", light: "#f4f6f3" } as const;
-
-  const syncTheme = (theme: "dark" | "light") => {
-    root.setAttribute("data-theme", theme);
-    themeMeta?.setAttribute("content", metaColors[theme]);
+  const reflectTheme = (theme: ThemeName) => {
+    themeMeta?.setAttribute("content", THEME_META_COLOR[theme]);
     stateLabels.forEach((el) => {
       el.textContent = `--${theme}`;
     });
   };
 
   // Reflect whatever the pre-paint script already applied.
-  const current =
-    root.getAttribute("data-theme") === "light" ? "light" : "dark";
-  syncTheme(current);
+  reflectTheme(getActiveTheme());
+
+  // Keep the label/chrome in sync when any source changes the theme.
+  window.addEventListener(THEME_CHANGE_EVENT, (e) => {
+    const theme = (e as CustomEvent<{ theme: ThemeName }>).detail?.theme;
+    if (isTheme(theme)) reflectTheme(theme);
+  });
 
   document.querySelectorAll("[data-theme-toggle]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const next =
-        root.getAttribute("data-theme") === "light" ? "dark" : "light";
-      syncTheme(next);
-      try {
-        localStorage.setItem("eayl-theme", next);
-      } catch {
-        /* storage unavailable — theme still applies for this session */
-      }
+      // The button flips between the two standard themes; clicking it from an
+      // exotic phosphor theme returns you to the plain light/dark pair.
+      applyTheme(getActiveTheme() === "light" ? "dark" : "light");
     });
   });
 </script>

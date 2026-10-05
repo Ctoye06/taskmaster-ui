@@ -43,11 +43,14 @@ const whatsNew = getWhatsNew();
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script is:inline>
       // Apply the saved theme before first paint to avoid a flash.
-      // Dark is the default when nothing valid is stored.
+      // Dark is the default when nothing valid is stored. The exotic CRT
+      // phosphor themes (amber/cyan/magenta) are summoned from the command
+      // palette but persist here like any other.
       (function () {
+        var valid = ["dark", "light", "amber", "cyan", "magenta"];
         try {
           var saved = localStorage.getItem("eayl-theme");
-          var theme = saved === "light" || saved === "dark" ? saved : "dark";
+          var theme = valid.indexOf(saved) >= 0 ? saved : "dark";
           document.documentElement.setAttribute("data-theme", theme);
         } catch (e) {
           document.documentElement.setAttribute("data-theme", "dark");

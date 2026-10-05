@@ -55,7 +55,11 @@ export const GET: APIRoute = ({ params, site }) => {
     ? new URL(withBase(`/tasks/${task.id}`), site).href
     : withBase(`/tasks/${task.id}`);
 
-  const description = [task.brief || task.description, taskUrl]
+  const briefText = Array.isArray(task.brief)
+    ? task.brief.map((point) => `• ${point}`).join("\n")
+    : task.brief;
+
+  const description = [briefText || task.description, taskUrl]
     .filter(Boolean)
     .join("\n\n");
 

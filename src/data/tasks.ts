@@ -22,7 +22,7 @@ export function deriveTaskStatus(
   return now < deadline ? "live" : "completed";
 }
 
-// 16 weekly tasks. Dates are mock values (local time, Fridays at 15:00).
+// 16 weekly tasks. Dates are mock values (local time, Fridays at 13:00).
 // Status is intentionally omitted here and derived from the dates below, so
 // this schedule is the single source of truth. Swap this array for a Supabase
 // query later without changing consumers.
@@ -34,8 +34,8 @@ const schedule: Omit<Task, "status">[] = [
     description: "Keep your egg alive for the entire week.",
     brief:
       "For the next seven days you are responsible for someone who cannot speak, cannot walk, and absolutely cannot be allowed to crack under pressure. Keep your egg safe until Friday afternoon. Your time starts now.",
-    releaseDate: "2026-09-18T15:00:00",
-    deadline: "2026-09-25T15:00:00",
+    releaseDate: "2026-09-18T13:00:00",
+    deadline: "2026-09-25T13:00:00",
   },
   {
     id: "week-02",
@@ -44,18 +44,23 @@ const schedule: Omit<Task, "status">[] = [
     description: "Navigate a route that creates a drawing on a map.",
     brief:
       "Using any mapping tool of your choice, plan and navigate a route that, when traced on a map, forms a recognizable drawing. Creativity and accuracy are key.",
-    releaseDate: "2026-09-25T15:00:00",
-    deadline: "2026-10-02T15:00:00",
+    releaseDate: "2026-09-25T13:00:00",
+    deadline: "2026-10-02T13:00:00",
   },
   {
     id: "week-03",
     weekNumber: 3,
     title: "Assassin",
     description: "Complete your secret mission. Stay alive.",
-    brief:
-      "Complete your secret mission and eliminate your target. Once successful, discreetly tell your target and the Taskmaster. Your eliminated target must then hand their mission to you. If eliminated, you may assist others but never reveal that you have been eliminated. Be cunning. Be devious. Trust no one.",
-    releaseDate: "2026-10-02T15:00:00",
-    deadline: "2026-10-09T15:00:00",
+    brief: [
+      "Complete your secret mission and eliminate your target.",
+      "Once successful, discreetly tell your target and the Taskmaster.",
+      "Your eliminated target must then hand their mission to you.",
+      "If eliminated, you may assist others but never reveal that you have been eliminated.",
+      "Be cunning. Be devious. Trust no one.",
+    ],
+    releaseDate: "2026-10-02T13:00:00",
+    deadline: "2026-10-09T13:00:00",
   },
   {
     id: "week-04",
@@ -63,8 +68,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-10-09T15:00:00",
-    deadline: "2026-10-16T15:00:00",
+    releaseDate: "2026-10-09T13:00:00",
+    deadline: "2026-10-16T13:00:00",
   },
   {
     id: "week-05",
@@ -72,8 +77,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-10-16T15:00:00",
-    deadline: "2026-10-23T15:00:00",
+    releaseDate: "2026-10-16T13:00:00",
+    deadline: "2026-10-23T13:00:00",
   },
   {
     id: "week-06",
@@ -81,8 +86,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-10-23T15:00:00",
-    deadline: "2026-10-30T15:00:00",
+    releaseDate: "2026-10-23T13:00:00",
+    deadline: "2026-10-30T13:00:00",
   },
   {
     id: "week-07",
@@ -90,8 +95,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-10-30T15:00:00",
-    deadline: "2026-11-06T15:00:00",
+    releaseDate: "2026-10-30T13:00:00",
+    deadline: "2026-11-06T13:00:00",
   },
   {
     id: "week-08",
@@ -99,8 +104,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-11-06T15:00:00",
-    deadline: "2026-11-13T15:00:00",
+    releaseDate: "2026-11-06T13:00:00",
+    deadline: "2026-11-13T13:00:00",
   },
   {
     id: "week-09",
@@ -108,8 +113,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-11-13T15:00:00",
-    deadline: "2026-11-20T15:00:00",
+    releaseDate: "2026-11-13T13:00:00",
+    deadline: "2026-11-20T13:00:00",
   },
   {
     id: "week-10",
@@ -117,8 +122,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-11-20T15:00:00",
-    deadline: "2026-11-27T15:00:00",
+    releaseDate: "2026-11-20T13:00:00",
+    deadline: "2026-11-27T13:00:00",
   },
   {
     id: "week-11",
@@ -126,8 +131,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-11-27T15:00:00",
-    deadline: "2026-12-04T15:00:00",
+    releaseDate: "2026-11-27T13:00:00",
+    deadline: "2026-12-04T13:00:00",
   },
   {
     id: "week-12",
@@ -135,8 +140,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-12-04T15:00:00",
-    deadline: "2026-12-11T15:00:00",
+    releaseDate: "2026-12-04T13:00:00",
+    deadline: "2026-12-11T13:00:00",
   },
   {
     id: "week-13",
@@ -144,8 +149,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2026-12-11T15:00:00",
-    deadline: "2026-12-18T15:00:00",
+    releaseDate: "2026-12-11T13:00:00",
+    deadline: "2026-12-18T13:00:00",
   },
   {
     id: "week-14",
@@ -153,8 +158,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2027-01-01T15:00:00",
-    deadline: "2027-01-08T15:00:00",
+    releaseDate: "2027-01-01T13:00:00",
+    deadline: "2027-01-08T13:00:00",
   },
   {
     id: "week-15",
@@ -162,8 +167,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2027-01-08T15:00:00",
-    deadline: "2027-01-15T15:00:00",
+    releaseDate: "2027-01-08T13:00:00",
+    deadline: "2027-01-15T13:00:00",
   },
   {
     id: "week-16",
@@ -171,8 +176,8 @@ const schedule: Omit<Task, "status">[] = [
     title: "???",
     description: "",
     brief: "",
-    releaseDate: "2027-01-15T15:00:00",
-    deadline: "2027-01-22T15:00:00",
+    releaseDate: "2027-01-15T13:00:00",
+    deadline: "2027-01-22T13:00:00",
   },
 ];
 

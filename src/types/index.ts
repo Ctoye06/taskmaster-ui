@@ -20,8 +20,12 @@ export interface Task {
   title: string;
   /** Short summary shown on cards. Hidden for upcoming tasks. */
   description: string;
-  /** Longer Taskmaster-style brief, shown on the task detail page. */
-  brief?: string;
+  /**
+   * Longer Taskmaster-style brief, shown on the task detail page. A plain
+   * string renders as prose; an array of strings renders as a terminal-style
+   * bullet list (one entry per point).
+   */
+  brief?: string | string[];
   releaseDate: string; // ISO 8601
   deadline: string; // ISO 8601
   status: TaskStatus;
