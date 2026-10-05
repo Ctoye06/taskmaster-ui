@@ -15,6 +15,7 @@ import {
   getTaskResults,
   getTaskPager,
   getPlayerInitials,
+  getRecapTaskIds,
 } from "../../data/queries";
 
 export const getStaticPaths = (() => {
@@ -32,6 +33,7 @@ if (!summary) {
 const { task, winner, winningScore } = summary;
 const results = task.status === "completed" ? getTaskResults(task.id) : [];
 const pager = getTaskPager(task.id);
+const hasRecap = getRecapTaskIds().includes(task.id);
 
 const weekLabel = `WEEK ${String(task.weekNumber).padStart(2, "0")}`;
 const isLocked = task.status === "upcoming";
@@ -333,6 +335,30 @@ const medal = (position: number) =>
             </p>
           )}
         </section>
+      )
+    }
+
+    <!-- Episode recap link (completed, scored tasks only) -->
+    {
+      hasRecap && (
+        <a
+          href={withBase(`/recaps/${task.id}`)}
+          class="group mt-10 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-magenta/40 bg-magenta/5 px-5 py-4 transition-colors hover:border-magenta"
+        >
+          <span class="flex items-center gap-2 text-[11px] font-bold tracking-widest text-magenta uppercase">
+            <span aria-hidden="true">◆</span> episode recap
+          </span>
+          <span class="text-sm text-ink-dim">
+            The full write-up — winner, biggest climber, points swing and the
+            funniest moment.
+          </span>
+          <span
+            class="ml-auto text-xs font-bold tracking-widest text-magenta uppercase group-hover:text-ink"
+            aria-hidden="true"
+          >
+            read recap &rarr;
+          </span>
+        </a>
       )
     }
 

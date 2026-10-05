@@ -1,0 +1,297 @@
+---
+import type { GetStaticPaths } from "astro";
+import Layout from "../../layouts/Layout.astro";
+import { withBase } from "../../lib/url";
+import TerminalWindow from "../../components/TerminalWindow.astro";
+import TaskStatusBadge from "../../components/TaskStatusBadge.astro";
+import StandingsTable from "../../components/StandingsTable.astro";
+import RecapHighlightCard from "../../components/RecapHighlightCard.astro";
+import ScoreBadge from "../../components/ScoreBadge.astro";
+import TaskPager from "../../components/TaskPager.astro";
+import ShareButton from "../../components/ShareButton.astro";
+import BackLink from "../../components/BackLink.astro";
+import { getRecapTaskIds, getWeekRecap } from "../../data/queries";
+
+export const getStaticPaths = (() => {
+  return getRecapTaskIds().map((id) => ({ params: { id } }));
+}) satisfies GetStaticPaths;
+
+const { id } = Astro.params;
+const recap = getWeekRecap(id!);
+
+// Unknown or unscored week → 404 rather than a broken page.
+if (!recap) {
+  return Astro.redirect("/404");
+}
+
+const {
+  task,
+  weekLabel,
+  episodeNumber,
+  winner,
+  podium,
+  biggestClimber,
+  titleRace,
+  weekPoints,
+  playersScored,
+  standings,
+  headline,
+  summary,
+  moment,
+  momentPlayer,
+  quote,
+  prev,
+  next,
+} = recap;
+
+const episodeTag = `EPISODE ${String(episodeNumber).padStart(2, "0")}`;
+const pageTitle = `${weekLabel} recap — ${task.title}`;
+const pageDescription = headline;
+
+// Winner tile copy.
+const winnerDetail = winner
+  ? winner.margin > 0
+    ? `${winner.margin} ${winner.margin === 1 ? "pt" : "pts"} clear of 2nd`
+    : "won on countback"
+  : undefined;
+
+// Points-swing / title-race tile copy.
+let swingValue: string | undefined;
+let swingDetail: string | undefined;
+if (titleRace) {
+  if (titleRace.swing !== undefined && titleRace.swing !== 0) {
+    const sign = titleRace.swing > 0 ? "+" : "−";
+    swingValue = `${sign}${Math.abs(titleRace.swing)}`;
+    swingDetail = `lead now ${titleRace.lead} pts`;
+  } else {
+    swingValue = `+${titleRace.lead}`;
+    swingDetail = titleRace.runnerUp
+      ? `clear of ${titleRace.runnerUp.name}`
+      : "out in front";
+  }
+  if (titleRace.changedHands) {
+    swingDetail = `new leader · ${swingDetail}`;
+  }
+}
+
+const medal = (position: number) =>
+  position === 1 ? "🥇" : position === 2 ? "🥈" : position === 3 ? "🥉" : null;
+---
+
+<Layout title={pageTitle} description={pageDescription}>
+  <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Back link + share -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <BackLink href="/recaps" label="ALL RECAPS" />
+      <ShareButton
+        url={new URL(Astro.url.pathname, Astro.site).href}
+        shareTitle={`${weekLabel} recap · EAYL Taskmaster`}
+        shareText={headline}
+        label="SHARE RECAP"
+      />
+    </div>
+
+    <!-- Header -->
+    <header class="mt-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="text-sm font-bold tracking-[0.3em] text-magenta">
+          {episodeTag}
+        </span>
+        <TaskStatusBadge status={task.status} />
+        <a
+          href={withBase(`/tasks/${task.id}`)}
+          class="text-xs font-bold tracking-widest text-ink-faint uppercase transition-colors hover:text-acid"
+        >
+          {weekLabel} · {task.title} &rarr;
+        </a>
+      </div>
+      <h1
+        class="mt-3 text-3xl font-extrabold leading-tight text-ink text-glow sm:text-5xl"
+      >
+        {headline}
+      </h1>
+      <p
+        class="mt-4 max-w-3xl text-sm leading-relaxed text-ink-dim sm:text-base"
+      >
+        <span class="text-acid">// </span>{summary}
+      </p>
+      <p class="mt-4 text-[11px] tracking-widest text-ink-faint uppercase">
+        {playersScored} scored · {weekPoints} points awarded
+      </p>
+    </header>
+
+    <!-- Episode highlights -->
+    <section class="mt-10">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        highlights --reel
+      </h2>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          winner && (
+            <RecapHighlightCard
+              label="Winner"
+              command="winner --task"
+              icon="🥇"
+              accent="amber"
+              value={`${winner.points} pts`}
+              player={winner.player}
+              detail={winnerDetail}
+            />
+          )
+        }
+
+        {
+          biggestClimber ? (
+            <RecapHighlightCard
+              label="Biggest climber"
+              command="climber --week"
+              icon="▲"
+              accent="acid"
+              value={`▲ ${biggestClimber.places}`}
+              player={biggestClimber.player}
+              detail={`#${biggestClimber.fromRank} → #${biggestClimber.toRank}`}
+            />
+          ) : (
+            <RecapHighlightCard
+              label="Biggest climber"
+              command="climber --week"
+              icon="▲"
+              accent="acid"
+              value="—"
+              detail="opening week — the race starts here"
+            />
+          )
+        }
+
+        {
+          titleRace ? (
+            <RecapHighlightCard
+              label="Points swing"
+              command="race --lead"
+              icon="◆"
+              accent="magenta"
+              value={swingValue}
+              player={titleRace.leader}
+              detail={swingDetail}
+            />
+          ) : (
+            <RecapHighlightCard
+              label="Points swing"
+              command="race --lead"
+              icon="◆"
+              accent="magenta"
+              value="—"
+              detail="no standings yet"
+            />
+          )
+        }
+
+        <RecapHighlightCard
+          label="Funniest moment"
+          command="moment --lol"
+          icon="💬"
+          accent="cyan"
+          player={momentPlayer}
+          text={moment ??
+            "The edit suite hasn't filed this week's highlight yet."}
+        />
+      </div>
+    </section>
+
+    <!-- Podium -->
+    {
+      podium.length > 0 && (
+        <section class="mt-10">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            podium --top 3
+          </h2>
+          <ol class="grid gap-3 sm:grid-cols-3">
+            {podium.map((row) => (
+              <li
+                class:list={[
+                  "flex items-center gap-3 rounded-lg border bg-term-panel p-4",
+                  row.position === 1
+                    ? "border-amber/40 bg-amber/5"
+                    : row.position === 2
+                      ? "border-ink-dim/30"
+                      : row.position === 3
+                        ? "border-acid-dim"
+                        : "border-grid",
+                ]}
+              >
+                <span class="text-2xl" aria-hidden="true">
+                  {medal(row.position)}
+                </span>
+                <a
+                  href={withBase(`/players/${row.player.id}`)}
+                  class="min-w-0 flex-1"
+                >
+                  <span class="block truncate font-bold text-ink hover:text-acid">
+                    {row.player.name}
+                  </span>
+                  <span class="text-[11px] tracking-widest text-ink-faint uppercase">
+                    {row.position === 1
+                      ? "winner"
+                      : row.position === 2
+                        ? "runner-up"
+                        : "third"}
+                  </span>
+                </a>
+                <ScoreBadge points={row.points} />
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
+
+    <!-- Quote -->
+    {
+      quote && (
+        <figure class="mt-10 rounded-xl border border-grid bg-term-panel/60 p-6 sm:p-8">
+          <blockquote class="border-l-2 border-magenta pl-4 text-xl leading-relaxed text-ink italic sm:text-2xl">
+            <span class="text-magenta not-italic" aria-hidden="true">
+              &ldquo;
+            </span>
+            {quote.text}
+            <span class="text-magenta not-italic" aria-hidden="true">
+              &rdquo;
+            </span>
+          </blockquote>
+          {quote.attribution && (
+            <figcaption class="mt-3 pl-4 text-xs font-bold tracking-widest text-ink-faint uppercase">
+              &mdash; {quote.attribution}
+            </figcaption>
+          )}
+        </figure>
+      )
+    }
+
+    <!-- Standings after this week -->
+    <section class="mt-10">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        standings --after {weekLabel.toLowerCase()}
+      </h2>
+      <TerminalWindow
+        title={`~/recaps/${task.id}/standings`}
+        meta={`after ${weekLabel}`}
+        bodyClass="p-0 sm:p-0"
+      >
+        <StandingsTable rows={standings} />
+      </TerminalWindow>
+    </section>
+
+    <!-- Episode pager -->
+    {
+      (prev || next) && (
+        <nav class="mt-12" aria-label="Previous and next recap">
+          <TaskPager prev={prev} next={next} />
+        </nav>
+      )
+    }
+  </div>
+</Layout>

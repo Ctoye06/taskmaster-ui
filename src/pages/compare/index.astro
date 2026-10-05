@@ -1,7 +1,6 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import ComparisonView from "../../components/ComparisonView.astro";
-import BackLink from "../../components/BackLink.astro";
 import { players } from "../../data/players";
 import { getTopPlayers, getPlayerComparison } from "../../data/queries";
 
@@ -15,18 +14,16 @@ const comparison = getPlayerComparison(first.player.id, second.player.id)!;
   description="Put any two EAYL Taskmaster players head to head, task by task."
 >
   <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-    <BackLink href="/leaderboard" label="LEADERBOARD" />
-
-    <header class="mt-6 mb-8">
+    <header class="mb-8">
       <p
         class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
       >
         diff --players
       </p>
       <h1
-        class="mt-3 text-4xl font-extrabold tracking-tight text-ink text-glow sm:text-6xl"
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-6xl"
       >
-        Head&nbsp;to&nbsp;Head
+        Head&nbsp;to&nbsp;<span class="text-acid text-glow">Head</span>
       </h1>
       <p
         class="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base"

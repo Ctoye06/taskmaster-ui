@@ -12,6 +12,9 @@ import type {
   PlayerComparison,
   PlayerTaskResult,
   PointsChartData,
+  RecapMover,
+  RecapSummary,
+  RecapTitleRace,
   Score,
   TaskResult,
   TaskResultRow,
@@ -19,11 +22,13 @@ import type {
   Task,
   TaskPager,
   TaskPagerLink,
+  WeekRecap,
   WhatsNewInfo,
 } from "../types";
 import { players, getPlayerById } from "./players";
 import { tasks, getTaskById, getCurrentTask } from "./tasks";
 import { scores } from "./scores";
+import { getRecapContent } from "./recaps";
 import { withBase } from "../lib/url";
 
 // This module is the single "data layer" the UI talks to. Pages import these
@@ -736,6 +741,14 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     keywords: "ranks table standings top",
   },
   {
+    id: "page-recaps",
+    label: "Recaps",
+    group: "page",
+    href: withBase("/recaps"),
+    hint: "weekly episodes",
+    keywords: "episodes week review winner climber recap",
+  },
+  {
     id: "page-compare",
     label: "Compare",
     group: "page",
@@ -846,6 +859,238 @@ export function getTaskPager(taskId: string): TaskPager {
     prev: index > 0 ? toLink(ordered[index - 1]) : undefined,
     next: index < ordered.length - 1 ? toLink(ordered[index + 1]) : undefined,
   };
+}
+
+// ─── Weekly "episode" recaps ─────────────────────────────────────────────
+// A recap turns a completed, scored week into an episode page. Everything
+// below is derived from the week's scores and the standings before/after it;
+// only the editorial colour comes from `recaps.ts`.
+
+const namedTitle = (task: Task) =>
+  task.title.length > 0 && task.title !== "???"
+    ? task.title
+    : `Week ${String(task.weekNumber).padStart(2, "0")}`;
+
+/** Completed tasks that have at least one recorded score, oldest first. */
+function getRecapTasks(): Task[] {
+  const scoredIds = new Set(scores.map((s) => s.taskId));
+  return [...tasks]
+    .filter((t) => t.status === "completed" && scoredIds.has(t.id))
+    .sort((a, b) => a.weekNumber - b.weekNumber);
+}
+
+/** Standings from every score up to and including the given week number. */
+function standingsUpToWeek(weekNumber: number): LeaderboardRow[] {
+  return computeStandings(
+    scores.filter(
+      (s) => (completedWeekByTask.get(s.taskId) ?? Infinity) <= weekNumber,
+    ),
+  );
+}
+
+function recapPagerLink(task: Task): TaskPagerLink {
+  return {
+    href: withBase(`/recaps/${task.id}`),
+    weekNumber: task.weekNumber,
+    title: namedTitle(task),
+    status: task.status,
+  };
+}
+
+/**
+ * The full "episode" recap for a week: winner, podium, biggest climber and
+ * faller, how the title race swung, the standings after the week, and the
+ * editorial copy (with auto-generated fallbacks). Undefined for unknown or
+ * unscored weeks.
+ */
+export function getWeekRecap(taskId: string): WeekRecap | undefined {
+  const task = getTaskById(taskId);
+  if (!task) return undefined;
+
+  const thisWeekScores = scores.filter((s) => s.taskId === taskId);
+  if (thisWeekScores.length === 0) return undefined;
+
+  const weekNumber = task.weekNumber;
+  const weekLabel = `WEEK ${String(weekNumber).padStart(2, "0")}`;
+
+  const results = getTaskResults(taskId);
+  const podium = results.slice(0, 3);
+  const winnerRow = results[0];
+  const runnerRow = results[1];
+  const winner = winnerRow
+    ? {
+        player: winnerRow.player,
+        points: winnerRow.points,
+        margin: winnerRow.points - (runnerRow?.points ?? 0),
+      }
+    : undefined;
+
+  const weekPoints = thisWeekScores.reduce((sum, s) => sum + s.points, 0);
+  const playersScored = thisWeekScores.length;
+  const weekPointsById = new Map(
+    thisWeekScores.map((s) => [s.playerId, s.points] as const),
+  );
+
+  // Is there any earlier scored week to measure movement against? Without one,
+  // "before" standings are meaningless (everyone is level), so we skip movers.
+  const hasPrior = scores.some(
+    (s) => (completedWeekByTask.get(s.taskId) ?? Infinity) < weekNumber,
+  );
+
+  const after = standingsUpToWeek(weekNumber);
+  const before = hasPrior ? standingsUpToWeek(weekNumber - 1) : [];
+  const beforeRankById = new Map(before.map((r) => [r.player.id, r.rank]));
+
+  // Standings after this week, annotated with movement *during* this week.
+  const standings: LeaderboardRow[] = after.map((row) => {
+    const previousRank = beforeRankById.get(row.player.id);
+    return {
+      ...row,
+      previousRank,
+      movement:
+        previousRank !== undefined ? previousRank - row.rank : undefined,
+    };
+  });
+
+  // Climbers / fallers for the week, biggest move first.
+  const movers: RecapMover[] = hasPrior
+    ? standings.flatMap((row) => {
+        const fromRank = beforeRankById.get(row.player.id);
+        if (fromRank === undefined) return [];
+        return [
+          {
+            player: row.player,
+            fromRank,
+            toRank: row.rank,
+            places: fromRank - row.rank,
+            weekPoints: weekPointsById.get(row.player.id) ?? 0,
+          },
+        ];
+      })
+    : [];
+
+  const biggestClimber = movers
+    .filter((m) => m.places > 0)
+    .sort((a, b) => b.places - a.places || b.weekPoints - a.weekPoints)[0];
+  const biggestFaller = movers
+    .filter((m) => m.places < 0)
+    .sort((a, b) => a.places - b.places || a.weekPoints - b.weekPoints)[0];
+
+  // Title race at the summit, before vs after.
+  const topRow = after[0];
+  const secondRow = after[1];
+  const prevTop = before[0];
+  const lead = topRow ? topRow.points - (secondRow?.points ?? 0) : 0;
+  // The *current* leader's margin before this week: their earlier points less
+  // the best of the rest. Negative when they were chasing, so a change of
+  // leader produces the full swing (e.g. from 5 behind to 3 clear = +8), not a
+  // misleading comparison of two different leaders' margins.
+  const leaderPointsBefore = topRow
+    ? before.find((r) => r.player.id === topRow.player.id)?.points
+    : undefined;
+  const bestOtherPointsBefore = topRow
+    ? before
+        .filter((r) => r.player.id !== topRow.player.id)
+        .reduce((max, r) => Math.max(max, r.points), 0)
+    : 0;
+  const previousLead =
+    hasPrior && leaderPointsBefore !== undefined
+      ? leaderPointsBefore - bestOtherPointsBefore
+      : undefined;
+  const titleRace: RecapTitleRace | undefined = topRow
+    ? {
+        leader: topRow.player,
+        runnerUp: secondRow?.player,
+        lead,
+        previousLead,
+        swing: previousLead !== undefined ? lead - previousLead : undefined,
+        changedHands: Boolean(
+          prevTop && prevTop.player.id !== topRow.player.id,
+        ),
+      }
+    : undefined;
+
+  // Editorial copy, with sensible auto-generated fallbacks.
+  const content = getRecapContent(taskId) ?? {};
+  const headline =
+    content.headline ??
+    (winner ? `${winner.player.name} wins ${weekLabel}` : `${weekLabel} recap`);
+
+  const summaryParts: string[] = [];
+  if (winner) {
+    summaryParts.push(
+      `${winner.player.name} took ${weekLabel.toLowerCase()} with ${winner.points} ${winner.points === 1 ? "point" : "points"}` +
+        (winner.margin > 0
+          ? `, ${winner.margin} clear of the chasing pack.`
+          : `, edging a tight finish.`),
+    );
+  }
+  if (biggestClimber) {
+    summaryParts.push(
+      `${biggestClimber.player.name} was the week's biggest climber, up ${biggestClimber.places} to #${biggestClimber.toRank}.`,
+    );
+  }
+  summaryParts.push(
+    `${playersScored} ${playersScored === 1 ? "player" : "players"} scored, for ${weekPoints} points in all.`,
+  );
+  const summary = content.summary ?? summaryParts.join(" ");
+
+  const momentPlayer = content.momentPlayerId
+    ? getPlayerById(content.momentPlayerId)
+    : undefined;
+
+  const recapTasks = getRecapTasks();
+  const index = recapTasks.findIndex((t) => t.id === taskId);
+
+  return {
+    task,
+    weekLabel,
+    episodeNumber: weekNumber,
+    winner,
+    podium,
+    biggestClimber,
+    biggestFaller,
+    titleRace,
+    weekPoints,
+    playersScored,
+    standings,
+    headline,
+    summary,
+    moment: content.moment,
+    momentPlayer,
+    quote: content.quote,
+    prev: index > 0 ? recapPagerLink(recapTasks[index - 1]) : undefined,
+    next:
+      index >= 0 && index < recapTasks.length - 1
+        ? recapPagerLink(recapTasks[index + 1])
+        : undefined,
+  };
+}
+
+/** Every available recap, condensed for the episode index grid, newest first. */
+export function getRecapSummaries(): RecapSummary[] {
+  return getRecapTasks()
+    .sort((a, b) => b.weekNumber - a.weekNumber)
+    .flatMap((task) => {
+      const recap = getWeekRecap(task.id);
+      if (!recap) return [];
+      return [
+        {
+          task,
+          weekLabel: recap.weekLabel,
+          episodeNumber: recap.episodeNumber,
+          headline: recap.headline,
+          winner: recap.winner?.player,
+          winningScore: recap.winner?.points,
+          biggestClimber: recap.biggestClimber,
+        },
+      ];
+    });
+}
+
+/** The ids of every week that currently has a recap page. */
+export function getRecapTaskIds(): string[] {
+  return getRecapTasks().map((t) => t.id);
 }
 
 /**

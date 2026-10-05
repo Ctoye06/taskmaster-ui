@@ -2,7 +2,6 @@
 import type { GetStaticPaths } from "astro";
 import Layout from "../../../layouts/Layout.astro";
 import ComparisonView from "../../../components/ComparisonView.astro";
-import BackLink from "../../../components/BackLink.astro";
 import { players } from "../../../data/players";
 import { getPlayerComparison } from "../../../data/queries";
 
@@ -30,18 +29,16 @@ if (!comparison) {
   description={`Head to head: ${comparison.a.player.name} (#${comparison.a.rank}) vs ${comparison.b.player.name} (#${comparison.b.rank}) in the EAYL Taskmaster.`}
 >
   <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-    <BackLink href="/leaderboard" label="LEADERBOARD" />
-
-    <header class="mt-6 mb-8">
+    <header class="mb-8">
       <p
         class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
       >
         diff --players
       </p>
       <h1
-        class="mt-3 text-4xl font-extrabold tracking-tight text-ink text-glow sm:text-6xl"
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-6xl"
       >
-        Head&nbsp;to&nbsp;Head
+        Head&nbsp;to&nbsp;<span class="text-acid text-glow">Head</span>
       </h1>
       <p class="mt-3 max-w-xl text-sm text-ink-dim">
         Two players enter. The stats don't lie. Pick any pair to see who's

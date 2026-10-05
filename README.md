@@ -38,6 +38,7 @@ src/
 │   ├── tasks/                 # /tasks and /tasks/[id]
 │   ├── players/               # /players and /players/[id]
 │   ├── leaderboard.astro      # full standings (with rank movement)
+│   ├── recaps/                # /recaps and /recaps/[id] weekly episode recaps
 │   ├── compare/               # /compare head-to-head (+ /compare/[a]/[b])
 │   ├── stats.astro            # stats & Hall of Fame awards
 │   └── 404.astro

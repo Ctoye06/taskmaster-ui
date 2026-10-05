@@ -2,13 +2,40 @@
 // Site navigation styled as a terminal window title bar.
 import { withBase } from "../lib/url";
 
-const links = [
-  { href: "/", label: "home" },
-  { href: "/tasks", label: "tasks" },
-  { href: "/leaderboard", label: "leaderboard" },
-  { href: "/compare", label: "compare" },
-  { href: "/stats", label: "stats" },
-  { href: "/players", label: "players" },
+interface NavItem {
+  href: string;
+  label: string;
+}
+
+interface NavGroup {
+  label: string;
+  children: NavItem[];
+}
+
+// The primary nav collapses into three command-style dropdowns. Home stays
+// reachable via the brand/logo link rather than its own nav item.
+const navGroups: NavGroup[] = [
+  {
+    label: "challenge",
+    children: [
+      { href: "/tasks", label: "tasks" },
+      { href: "/recaps", label: "recaps" },
+    ],
+  },
+  {
+    label: "rankings",
+    children: [
+      { href: "/leaderboard", label: "leaderboard" },
+      { href: "/stats", label: "stats" },
+    ],
+  },
+  {
+    label: "players",
+    children: [
+      { href: "/players", label: "players" },
+      { href: "/compare", label: "compare" },
+    ],
+  },
 ];
 
 const path = Astro.url.pathname;
@@ -16,6 +43,8 @@ const isActive = (href: string) => {
   const full = withBase(href);
   return href === "/" ? path === full : path.startsWith(full);
 };
+const isGroupActive = (group: NavGroup) =>
+  group.children.some((child) => isActive(child.href));
 ---
 
 <header
@@ -47,14 +76,16 @@ const isActive = (href: string) => {
     <!-- Desktop links -->
     <ul class="hidden items-center gap-1 min-[1100px]:flex">
       {
-        links.map((link) => (
-          <li>
-            <a
-              href={withBase(link.href)}
-              aria-current={isActive(link.href) ? "page" : undefined}
+        navGroups.map((group) => (
+          <li class="relative" data-nav-dropdown>
+            <button
+              type="button"
+              data-nav-dropdown-trigger
+              aria-haspopup="true"
+              aria-expanded="false"
               class:list={[
-                "group inline-flex shrink-0 items-center whitespace-nowrap rounded px-2 py-2 text-sm tracking-wide transition-colors",
-                isActive(link.href)
+                "group inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-2 py-2 text-sm tracking-wide transition-colors",
+                isGroupActive(group)
                   ? "text-acid"
                   : "text-ink-dim hover:text-ink",
               ]}
@@ -62,15 +93,51 @@ const isActive = (href: string) => {
               <span
                 class:list={[
                   "mr-1",
-                  isActive(link.href)
+                  isGroupActive(group)
                     ? "text-acid"
                     : "text-ink-faint group-hover:text-acid",
                 ]}
               >
                 ./
               </span>
-              {link.label}
-            </a>
+              {group.label}
+              <span
+                class="ml-0.5 text-[10px] text-ink-faint transition-transform group-aria-expanded:rotate-180"
+                aria-hidden="true"
+              >
+                ▾
+              </span>
+            </button>
+            <ul
+              data-nav-dropdown-menu
+              class="absolute left-0 top-full z-50 mt-1 hidden min-w-[11rem] rounded-md border border-grid bg-term-panel p-1 shadow-lg shadow-acid/5"
+            >
+              {group.children.map((child) => (
+                <li>
+                  <a
+                    href={withBase(child.href)}
+                    aria-current={isActive(child.href) ? "page" : undefined}
+                    class:list={[
+                      "group/item flex items-center gap-2 rounded px-3 py-2 text-sm tracking-wide transition-colors",
+                      isActive(child.href)
+                        ? "text-acid"
+                        : "text-ink-dim hover:bg-term-panel-2 hover:text-ink",
+                    ]}
+                  >
+                    <span
+                      class:list={[
+                        isActive(child.href)
+                          ? "text-acid"
+                          : "text-ink-faint group-hover/item:text-acid",
+                      ]}
+                    >
+                      ./
+                    </span>
+                    {child.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </li>
         ))
       }
@@ -176,19 +243,34 @@ const isActive = (href: string) => {
         </button>
       </li>
       {
-        links.map((link) => (
-          <li>
-            <a
-              href={withBase(link.href)}
-              aria-current={isActive(link.href) ? "page" : undefined}
-              class:list={[
-                "flex items-center gap-2 border-b border-grid-soft py-3 text-sm tracking-wide last:border-b-0",
-                isActive(link.href) ? "text-acid" : "text-ink-dim",
-              ]}
-            >
-              <span class="text-ink-faint">./</span>
-              {link.label}
-            </a>
+        navGroups.map((group) => (
+          <li class="border-b border-grid-soft py-2 last:border-b-0">
+            <p class="px-0 py-1 text-[10px] uppercase tracking-[0.25em] text-ink-faint">
+              {group.label}
+            </p>
+            <ul>
+              {group.children.map((child) => (
+                <li>
+                  <a
+                    href={withBase(child.href)}
+                    aria-current={isActive(child.href) ? "page" : undefined}
+                    class:list={[
+                      "flex items-center gap-2 py-2 pl-3 text-sm tracking-wide",
+                      isActive(child.href) ? "text-acid" : "text-ink-dim",
+                    ]}
+                  >
+                    <span
+                      class:list={[
+                        isActive(child.href) ? "text-acid" : "text-ink-faint",
+                      ]}
+                    >
+                      ./
+                    </span>
+                    {child.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </li>
         ))
       }
@@ -214,6 +296,47 @@ const isActive = (href: string) => {
     const open = menu?.classList.toggle("hidden") === false;
     toggle.setAttribute("aria-expanded", String(open));
     if (label) label.textContent = open ? "close" : "menu";
+  });
+
+  // ---- Desktop nav dropdowns -----------------------------------------
+  // Click-to-toggle disclosure menus; only one open at a time, and they
+  // dismiss on outside click or Escape for keyboard/pointer users alike.
+  const dropdowns = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-nav-dropdown]"),
+  );
+
+  const setDropdownOpen = (dropdown: HTMLElement, open: boolean) => {
+    const trigger = dropdown.querySelector<HTMLButtonElement>(
+      "[data-nav-dropdown-trigger]",
+    );
+    const panel = dropdown.querySelector<HTMLElement>(
+      "[data-nav-dropdown-menu]",
+    );
+    trigger?.setAttribute("aria-expanded", String(open));
+    panel?.classList.toggle("hidden", !open);
+  };
+
+  const closeAllDropdowns = (except?: HTMLElement) => {
+    dropdowns.forEach((dropdown) => {
+      if (dropdown !== except) setDropdownOpen(dropdown, false);
+    });
+  };
+
+  dropdowns.forEach((dropdown) => {
+    const trigger = dropdown.querySelector<HTMLButtonElement>(
+      "[data-nav-dropdown-trigger]",
+    );
+    trigger?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const willOpen = trigger.getAttribute("aria-expanded") !== "true";
+      closeAllDropdowns(dropdown);
+      setDropdownOpen(dropdown, willOpen);
+    });
+  });
+
+  document.addEventListener("click", () => closeAllDropdowns());
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAllDropdowns();
   });
 
   // ---- Theme toggle --------------------------------------------------

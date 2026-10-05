@@ -275,3 +275,101 @@ export interface Award {
   detail?: string;
   accent: "acid" | "magenta" | "amber" | "cyan";
 }
+
+// ─── Weekly "episode" recap ──────────────────────────────────────────────
+// A recap turns a completed week into an episode page: who won, who climbed,
+// how the title race swung, and the editorial colour (headline, summary, the
+// funniest moment). Raw editorial copy is a record (`WeekRecapContent`);
+// everything else is derived in queries.ts from scores + standings.
+
+/**
+ * Hand-written editorial colour for a week, keyed by task id in
+ * `src/data/recaps.ts`. Every field is optional — the recap page falls back
+ * to auto-generated text when a week has not been written up yet. Becomes a
+ * Supabase table later; keep the shape stable.
+ */
+export interface WeekRecapContent {
+  /** Punchy episode headline, e.g. "Rose cracks the opener". */
+  headline?: string;
+  /** A short narrative paragraph recapping the week. */
+  summary?: string;
+  /** The funniest moment of the week (the "edit suite" highlight). */
+  moment?: string;
+  /** Player the moment is about, so it can link to their profile. */
+  momentPlayerId?: string;
+  /** An optional memorable quote from the week. */
+  quote?: { text: string; attribution?: string };
+}
+
+/** A player who moved up or down the standings during a single week. */
+export interface RecapMover {
+  player: Player;
+  /** Overall rank before this week's result (1 = top). */
+  fromRank: number;
+  /** Overall rank after this week's result. */
+  toRank: number;
+  /** Places gained this week (positive = climbed). */
+  places: number;
+  /** Points earned in this week's task. */
+  weekPoints: number;
+}
+
+/** The state of the title race at the top of the table after a week. */
+export interface RecapTitleRace {
+  leader: Player;
+  /** The runner-up, if there is one. */
+  runnerUp?: Player;
+  /** Leader's points margin over the runner-up after this week. */
+  lead: number;
+  /** The same margin before this week (absent for the first scored week). */
+  previousLead?: number;
+  /** Change in the lead this week (positive = the leader pulled away). */
+  swing?: number;
+  /** True when this week produced a new outright leader. */
+  changedHands: boolean;
+}
+
+/** A fully-derived episode recap for one completed week. */
+export interface WeekRecap {
+  task: Task;
+  /** Display label, e.g. "WEEK 03". */
+  weekLabel: string;
+  /** Episode number (equals the week number). */
+  episodeNumber: number;
+  /** The task winner and their winning margin, if the week was scored. */
+  winner?: { player: Player; points: number; margin: number };
+  /** Top three finishers for the week. */
+  podium: TaskResultRow[];
+  /** Biggest climber of the week, if anyone moved up. */
+  biggestClimber?: RecapMover;
+  /** Biggest faller of the week, if anyone moved down. */
+  biggestFaller?: RecapMover;
+  /** The title race after this week. */
+  titleRace?: RecapTitleRace;
+  /** Total points awarded across the week. */
+  weekPoints: number;
+  /** How many players were scored this week. */
+  playersScored: number;
+  /** Overall standings after this week, annotated with weekly movement. */
+  standings: LeaderboardRow[];
+  /** Editorial copy, merged with sensible auto-generated fallbacks. */
+  headline: string;
+  summary: string;
+  moment?: string;
+  momentPlayer?: Player;
+  quote?: { text: string; attribution?: string };
+  /** Previous / next completed recap for the episode pager. */
+  prev?: TaskPagerLink;
+  next?: TaskPagerLink;
+}
+
+/** A condensed recap for the episode index grid. */
+export interface RecapSummary {
+  task: Task;
+  weekLabel: string;
+  episodeNumber: number;
+  headline: string;
+  winner?: Player;
+  winningScore?: number;
+  biggestClimber?: RecapMover;
+}
