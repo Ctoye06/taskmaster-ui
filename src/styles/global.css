@@ -16,9 +16,12 @@
   --color-grid: #1d2a38;
   --color-grid-soft: #152030;
 
-  --color-ink: #cfdae6;
-  --color-ink-dim: #8595a7;
-  --color-ink-faint: #5a6675;
+  /* Ink ramp tuned so every step meets WCAG AA (>=4.5:1) on the dark
+     surfaces above, while keeping a clear primary > secondary > faint
+     hierarchy. ink-faint in particular was previously ~3:1 and failed. */
+  --color-ink: #dbe4ee; /* primary text   — ~15:1 on term-bg */
+  --color-ink-dim: #a3afc0; /* secondary/body — ~8.9:1 on term-bg */
+  --color-ink-faint: #8491a3; /* captions/meta  — ~6.2:1 on term-bg */
 
   --color-acid: #3ef08b; /* primary terminal green  */
   --color-acid-dim: #1f7f4c;

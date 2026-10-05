@@ -392,6 +392,8 @@ const cellResult = (result?: { position: number; points: number }) => result;
 </section>
 
 <script>
+  import { withBase } from "../lib/url";
+
   const selA = document.getElementById("picker-a") as HTMLSelectElement | null;
   const selB = document.getElementById("picker-b") as HTMLSelectElement | null;
   const swap = document.getElementById("swap-players");
@@ -403,7 +405,7 @@ const cellResult = (result?: { position: number; points: number }) => result;
 
   function go(aId: string, bId: string) {
     if (aId && bId && aId !== bId) {
-      window.location.href = `/compare/${aId}/${bId}`;
+      window.location.href = withBase(`/compare/${aId}/${bId}`);
     }
   }
 
