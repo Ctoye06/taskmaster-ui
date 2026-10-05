@@ -1,0 +1,163 @@
+---
+// Homepage easter egg: a pixel egg that waddles around the viewport. Click
+// (or activate with the keyboard) and it cracks, yelps a speech-bubbled
+// "EGGY!", and screams in pain via the Web Speech API — then recovers and
+// keeps wandering. Pure progressive enhancement: it stays hidden without JS
+// and holds still (but remains clickable) under prefers-reduced-motion.
+import { withBase } from "../lib/url";
+
+interface Props {
+  /** Extra classes merged onto the root wrapper. */
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+
+const eggSrc = withBase("/favicon.svg");
+const crackedSrc = withBase("/egg-cracked.svg");
+---
+
+<div
+  id="walking-egg"
+  class:list={["walking-egg", className]}
+  data-egg-src={eggSrc}
+  data-cracked-src={crackedSrc}
+  hidden
+>
+  <button type="button" class="walking-egg__btn" aria-label="A wandering egg — poke it (careful, it's fragile)">
+    <img class="walking-egg__img" src={eggSrc} alt="" width="40" height="40" aria-hidden="true" />
+    <span class="walking-egg__legs" aria-hidden="true"></span>
+  </button>
+  <span class="walking-egg__bubble" role="status" aria-hidden="true">EGGY!</span>
+</div>
+
+<script>
+  const root = document.getElementById("walking-egg");
+  const btn = root?.querySelector<HTMLButtonElement>(".walking-egg__btn");
+  const img = root?.querySelector<HTMLImageElement>(".walking-egg__img");
+  if (root && btn && img) {
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const eggSrc = root.dataset.eggSrc ?? "/favicon.svg";
+    const crackedSrc = root.dataset.crackedSrc ?? eggSrc;
+
+    const SIZE = 56; // hit-area footprint in px
+    const SPEED = 70; // px per second while walking
+    const MARGIN = 12;
+
+    let x = 0;
+    let y = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let facing = 1;
+    let cracked = false;
+    let pauseUntil = 0;
+    let lastT = 0;
+    let rafId = 0;
+
+    const maxX = () => Math.max(MARGIN, window.innerWidth - SIZE - MARGIN);
+    const maxY = () => Math.max(MARGIN, window.innerHeight - SIZE - MARGIN);
+    const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+    function place() {
+      root!.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      img!.style.setProperty("--egg-face", String(facing));
+    }
+
+    function pickTarget() {
+      targetX = rand(MARGIN, maxX());
+      targetY = rand(MARGIN, maxY());
+    }
+
+    function step(t: number) {
+      if (!lastT) lastT = t;
+      const dt = Math.min(0.05, (t - lastT) / 1000);
+      lastT = t;
+
+      if (!cracked && t >= pauseUntil) {
+        const dx = targetX - x;
+        const dy = targetY - y;
+        const dist = Math.hypot(dx, dy);
+        const walking = dist > 2;
+        root!.classList.toggle("is-walking", walking);
+
+        if (walking) {
+          const move = Math.min(dist, SPEED * dt);
+          x += (dx / dist) * move;
+          y += (dy / dist) * move;
+          if (Math.abs(dx) > 1) facing = dx < 0 ? -1 : 1;
+          place();
+        } else {
+          // Reached a spot: loiter, then wander somewhere new.
+          pauseUntil = t + rand(400, 1400);
+          pickTarget();
+        }
+      }
+      rafId = requestAnimationFrame(step);
+    }
+
+    function scream() {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      try {
+        synth.cancel();
+        const u = new SpeechSynthesisUtterance("Eggy!");
+        u.pitch = 1.8; // shrill, pained
+        u.rate = 1.15;
+        u.volume = 1;
+        synth.speak(u);
+      } catch {
+        /* speech unavailable — the visual still plays */
+      }
+    }
+
+    function crack() {
+      if (cracked) return;
+      cracked = true;
+      root!.classList.remove("is-walking");
+      root!.classList.add("is-cracked");
+      img!.src = crackedSrc;
+      scream();
+      (
+        window as unknown as { __eggToast?: (m: string, t?: string) => void }
+      ).__eggToast?.("you broke Eggy :(", "magenta");
+
+      window.setTimeout(() => {
+        cracked = false;
+        root!.classList.remove("is-cracked");
+        img!.src = eggSrc;
+        // Recover and waddle off in a fresh direction.
+        pauseUntil = 0;
+        pickTarget();
+      }, 1900);
+    }
+
+    btn!.addEventListener("click", crack);
+
+    function onResize() {
+      x = Math.min(x, maxX());
+      y = Math.min(y, maxY());
+      targetX = Math.min(targetX, maxX());
+      targetY = Math.min(targetY, maxY());
+      place();
+    }
+    window.addEventListener("resize", onResize, { passive: true });
+
+    // Boot: drop it in from a random edge spot and reveal.
+    x = rand(MARGIN, maxX());
+    y = rand(maxY() * 0.4, maxY());
+    pickTarget();
+    place();
+    root.hidden = false;
+
+    if (prefersReduced) {
+      // Hold still, but stay pokeable for the crack + scream.
+      root.classList.remove("is-walking");
+    } else {
+      rafId = requestAnimationFrame(step);
+    }
+
+    window.addEventListener("beforeunload", () => cancelAnimationFrame(rafId));
+  }
+</script>

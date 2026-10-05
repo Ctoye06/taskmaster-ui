@@ -518,6 +518,137 @@ a[data-me-row].is-me {
   }
 }
 
+/* Wandering egg (homepage): a pixel egg that waddles around and cracks when
+   poked. Position is driven by JS (translate3d on the root); CSS owns the
+   waddle, legs, crack shake and speech bubble. */
+.walking-egg {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 85;
+  width: 56px;
+  height: 56px;
+}
+.walking-egg__btn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+.walking-egg__img {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.45));
+  transform-origin: 50% 90%;
+  transform: scaleX(var(--egg-face, 1));
+}
+.walking-egg.is-walking .walking-egg__img {
+  animation: egg-waddle 0.46s ease-in-out infinite;
+}
+/* Two little legs that peek out below the shell and step while walking. */
+.walking-egg__legs,
+.walking-egg__legs::before,
+.walking-egg__legs::after {
+  position: absolute;
+}
+.walking-egg__legs {
+  left: 50%;
+  bottom: 6px;
+  width: 16px;
+  height: 8px;
+  transform: translateX(-50%);
+}
+.walking-egg__legs::before,
+.walking-egg__legs::after {
+  content: "";
+  bottom: 0;
+  width: 3px;
+  height: 7px;
+  background: var(--color-ink-faint);
+}
+.walking-egg__legs::before {
+  left: 2px;
+}
+.walking-egg__legs::after {
+  right: 2px;
+}
+.walking-egg.is-walking .walking-egg__legs::before {
+  animation: egg-step 0.46s ease-in-out infinite;
+}
+.walking-egg.is-walking .walking-egg__legs::after {
+  animation: egg-step 0.46s ease-in-out 0.23s infinite;
+}
+.walking-egg.is-cracked .walking-egg__img {
+  animation: egg-crack-shake 0.5s ease-in-out;
+}
+/* "EGGY!" pain bubble, shown only while cracked. */
+.walking-egg__bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 4px);
+  transform: translate(-50%, 6px);
+  padding: 2px 8px;
+  border: 1px solid var(--color-magenta);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-term-panel) 95%, transparent);
+  color: var(--color-magenta);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.walking-egg.is-cracked .walking-egg__bubble {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+@keyframes egg-waddle {
+  0%,
+  100% {
+    transform: scaleX(var(--egg-face, 1)) rotate(-7deg) translateY(0);
+  }
+  50% {
+    transform: scaleX(var(--egg-face, 1)) rotate(7deg) translateY(-3px);
+  }
+}
+@keyframes egg-step {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-3px) scaleY(0.7);
+  }
+}
+@keyframes egg-crack-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  20% {
+    transform: translateX(-3px) rotate(-6deg);
+  }
+  40% {
+    transform: translateX(3px) rotate(6deg);
+  }
+  60% {
+    transform: translateX(-2px) rotate(-4deg);
+  }
+  80% {
+    transform: translateX(2px) rotate(4deg);
+  }
+}
+
 /* Countdown reaching zero live: a brief glitch shudder. */
 .cd-zero-glitch {
   animation: cd-glitch 0.4s steps(2) 3;
