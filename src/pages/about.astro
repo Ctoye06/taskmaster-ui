@@ -1,0 +1,224 @@
+---
+import Layout from "../layouts/Layout.astro";
+import TerminalWindow from "../components/TerminalWindow.astro";
+import StatCard from "../components/StatCard.astro";
+import { withBase } from "../lib/url";
+import { tasks } from "../data/tasks";
+import { getCompetitionStats } from "../data/queries";
+
+const stats = getCompetitionStats();
+const totalWeeks = tasks.length;
+
+const btnPrimary =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-acid bg-acid/10 px-5 py-2.5 text-sm font-bold tracking-widest text-acid transition-colors hover:bg-acid hover:text-term-bg focus-visible:outline-none";
+const btnGhost =
+  "inline-flex items-center justify-center gap-2 rounded-md border border-grid px-4 py-2 text-xs font-bold tracking-widest text-ink-dim transition-colors hover:border-ink-faint hover:text-ink";
+
+// The weekly loop that defines the competition, rendered as a terminal
+// "process" so the rules read like program output rather than a brochure.
+const loop: { cmd: string; text: string }[] = [
+  {
+    cmd: "release task",
+    text: "A new brief drops every week — a creative, often ridiculous challenge with a strict deadline.",
+  },
+  {
+    cmd: "submit entry",
+    text: "Players interpret the brief however they dare and send in their attempt before time runs out.",
+  },
+  {
+    cmd: "judge --taskmaster",
+    text: "The Taskmaster reviews every entry and awards points. The decision is final, fair-ish, and non-negotiable.",
+  },
+  {
+    cmd: "update leaderboard",
+    text: "Points roll into the individual and team standings. Rankings shift, rivalries ignite, repeat.",
+  },
+];
+---
+
+<Layout
+  title="About"
+  description="What EAYL Taskmaster is, how it works, and who the Taskmaster — Callum Mohan — actually is."
+>
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Header -->
+    <header class="mb-10">
+      <p
+        class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        cat ~/about.md
+      </p>
+      <h1
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-6xl"
+      >
+        ABOUT THE <span class="text-acid text-glow">CHALLENGE</span>
+      </h1>
+      <p
+        class="mt-3 max-w-2xl text-sm leading-relaxed text-ink-dim sm:text-base"
+      >
+        <span class="text-acid">//</span>
+        {totalWeeks} weeks of creative chaos, one spreadsheet of truth, and a single
+        champion left standing. Here's the story behind EAYL Taskmaster.
+      </p>
+    </header>
+
+    <!-- What is it -->
+    <section>
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        about --what-is-this
+      </h2>
+
+      <div class="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <TerminalWindow title="~/about/eayl-taskmaster.md">
+          <h3 class="text-2xl font-extrabold text-ink sm:text-3xl">
+            What is EAYL Taskmaster?
+          </h3>
+          <div class="mt-4 space-y-4 text-sm leading-relaxed text-ink-dim">
+            <p>
+              <span class="text-acid">&gt;</span> EAYL Taskmaster is an EAYL Academy
+              competition inspired by the cult TV show — a season-long battle of creativity,
+              cunning, and committing fully to a bad idea. Over {totalWeeks} weeks,
+              {stats.totalPlayers} players take on a new task each week and fight
+              for a place at the top of the leaderboard.
+            </p>
+            <p>
+              <span class="text-cyan">&gt;</span> Tasks range from the clever to the
+              chaotic: keep an egg alive for seven days, build something out of nothing,
+              bend the rules without technically breaking them. There's rarely one
+              right answer — just the most points.
+            </p>
+            <p>
+              <span class="text-cyan">&gt;</span> Some weeks you compete solo, some
+              weeks as a squad. Points stack up across the season into both individual
+              and team standings, until only <span class="text-acid"
+                >one winner</span
+              > remains.
+            </p>
+          </div>
+        </TerminalWindow>
+
+        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+          <StatCard
+            value={totalWeeks}
+            label="Weeks"
+            command="count weeks"
+            accent="magenta"
+          />
+          <StatCard
+            value={stats.totalPlayers}
+            label="Players"
+            command="count players"
+            accent="acid"
+          />
+          <StatCard
+            value={stats.tasksCompleted}
+            label="Tasks completed"
+            command="count tasks --done"
+            accent="cyan"
+          />
+          <StatCard
+            value={stats.pointsAwarded}
+            label="Points awarded"
+            command="sum points"
+            accent="amber"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="mt-14">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        about --how-it-works
+      </h2>
+
+      <TerminalWindow title="~/about/the-weekly-loop.sh">
+        <ol class="space-y-5">
+          {
+            loop.map((step, i) => (
+              <li class="flex gap-4">
+                <span
+                  class="mt-0.5 shrink-0 text-sm font-extrabold tabular-nums text-ink-faint"
+                  aria-hidden="true"
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <p class="text-sm font-bold tracking-wide text-acid">
+                    <span class="text-ink-faint">$</span> {step.cmd}
+                  </p>
+                  <p class="mt-1 text-sm leading-relaxed text-ink-dim">
+                    {step.text}
+                  </p>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </TerminalWindow>
+    </section>
+
+    <!-- Meet the Taskmaster -->
+    <section class="mt-14">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        whoami --taskmaster
+      </h2>
+
+      <TerminalWindow title="~/whoami" meta="root@taskmaster">
+        <div class="grid gap-8 lg:grid-cols-[auto_1fr] lg:items-start">
+          <div
+            class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-grid bg-term-panel-2 text-2xl font-extrabold tracking-widest text-acid text-glow sm:h-24 sm:w-24 sm:text-3xl"
+            aria-hidden="true"
+          >
+            CM
+          </div>
+
+          <div>
+            <h3 class="text-2xl font-extrabold text-ink sm:text-3xl">
+              Callum Mohan
+            </h3>
+            <p
+              class="mt-1 text-[11px] font-bold tracking-[0.25em] text-ink-faint uppercase"
+            >
+              The Taskmaster
+            </p>
+
+            <div class="mt-4 space-y-4 text-sm leading-relaxed text-ink-dim">
+              <p>
+                <span class="text-acid">&gt;</span> Callum Mohan is the creator, host,
+                and supreme authority of EAYL Taskmaster. He writes the tasks, sets
+                the deadlines, judges every entry, and awards the points — generously,
+                arbitrarily, and <span class="text-ink">absolutely</span>.
+              </p>
+              <p>
+                <span class="text-cyan">&gt;</span> His word is law. His scoring is
+                final. His reasoning is occasionally shared, never appealed. If you
+                think a decision was unfair, you are probably right, and it will not
+                be changing.
+              </p>
+              <p>
+                <span class="text-cyan">&gt;</span> Every brief, every twist, and
+                every questionable points total flows from one source — this whole
+                thing is, and will always be, <span class="text-acid"
+                  >a Callum Mohan production</span
+                >.
+              </p>
+            </div>
+          </div>
+        </div>
+      </TerminalWindow>
+    </section>
+
+    <!-- CTA -->
+    <section class="mt-14 flex flex-wrap items-center gap-3">
+      <a href={withBase("/tasks")} class={btnPrimary}>&gt; BROWSE THE TASKS</a>
+      <a href={withBase("/leaderboard")} class={btnGhost}>VIEW LEADERBOARD</a>
+    </section>
+  </div>
+</Layout>

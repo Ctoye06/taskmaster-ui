@@ -1,4 +1,4 @@
-import type { Task, TaskStatus } from "../types";
+import type { Task, TaskStatus, TaskFormat } from "../types";
 
 /**
  * Derives a task's status purely from its release/deadline dates, so the
@@ -24,9 +24,12 @@ export function deriveTaskStatus(
 
 // 16 weekly tasks. Dates are mock values (local time, Fridays at 13:00).
 // Status is intentionally omitted here and derived from the dates below, so
-// this schedule is the single source of truth. Swap this array for a Supabase
-// query later without changing consumers.
-const schedule: Omit<Task, "status">[] = [
+// this schedule is the single source of truth. `format` defaults to
+// "individual"; set it to "team" for a squad task (see week-04). Swap this
+// array for a Supabase query later without changing consumers.
+const schedule: (Omit<Task, "status" | "format"> & {
+  format?: TaskFormat;
+})[] = [
   {
     id: "week-01",
     weekNumber: 1,
@@ -65,11 +68,12 @@ const schedule: Omit<Task, "status">[] = [
   {
     id: "week-04",
     weekNumber: 4,
-    title: "???",
+    title: "Task Tank: Sink or Swim",
     description: "",
     brief: "",
     releaseDate: "2026-10-09T13:00:00",
     deadline: "2026-10-16T13:00:00",
+    format: "team",
   },
   {
     id: "week-05",
@@ -183,8 +187,10 @@ const schedule: Omit<Task, "status">[] = [
 
 // The schedule with each task's status computed from its dates. Consumers
 // import this (never `schedule`) so they always see a clock-correct status.
+// `format` defaults to "individual" when a task does not declare one.
 export const tasks: Task[] = schedule.map((task) => ({
   ...task,
+  format: task.format ?? "individual",
   status: deriveTaskStatus(task),
 }));
 
@@ -197,4 +203,11 @@ export function getCurrentTask(): Task | undefined {
     tasks.find((t) => t.status === "live") ??
     tasks.find((t) => t.status === "upcoming")
   );
+}
+
+/** Team-format tasks on the schedule, ascending by week number. */
+export function getTeamTasks(): Task[] {
+  return tasks
+    .filter((t) => t.format === "team")
+    .sort((a, b) => a.weekNumber - b.weekNumber);
 }

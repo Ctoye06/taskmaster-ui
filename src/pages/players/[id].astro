@@ -11,6 +11,7 @@ import AchievementBadge from "../../components/AchievementBadge.astro";
 import PlayerAvatar from "../../components/PlayerAvatar.astro";
 import { withBase } from "../../lib/url";
 import { players } from "../../data/players";
+import { getTeamForPlayer } from "../../data/teams";
 import {
   getPlayerStanding,
   getPlayerResults,
@@ -33,6 +34,7 @@ if (!standing) {
 
 const { player, rank } = standing;
 const results = getPlayerResults(player.id);
+const team = getTeamForPlayer(player.id);
 
 const hasPlayed = standing.tasksCompleted > 0;
 const bestFinish = hasPlayed ? Math.min(...results.map((r) => r.position)) : 0;
@@ -108,6 +110,21 @@ const positionClasses = (position: number) => {
               {standing.wins}{" "}
               {standing.wins === 1 ? "win" : "wins"}
             </span>
+            {
+              team && (
+                <>
+                  <span class="text-ink-faint" aria-hidden="true">
+                    ·
+                  </span>
+                  <a
+                    href={withBase(`/teams/${team.id}`)}
+                    class="text-cyan underline-offset-2 hover:underline"
+                  >
+                    {team.name}
+                  </a>
+                </>
+              )
+            }
           </p>
         </div>
       </div>

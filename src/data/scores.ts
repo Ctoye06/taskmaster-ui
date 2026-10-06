@@ -1,6 +1,7 @@
-import type { Score } from "../types";
+import type { Score, TeamScore } from "../types";
 import { tasks } from "./tasks";
 import { players } from "./players";
+import { teams } from "./teams";
 
 /**
  * Static weekly task scores — the single place results are recorded.
@@ -75,7 +76,6 @@ export const weeklyTaskScores: Record<string, Record<string, number>> = {
   },
   // --- Placeholders: fill in each week's points as tasks are scored. ---
   "week-03": {},
-  "week-04": {},
   "week-05": {},
   "week-06": {},
   "week-07": {},
@@ -90,55 +90,150 @@ export const weeklyTaskScores: Record<string, Record<string, number>> = {
   "week-16": {},
 };
 
+/**
+ * Static weekly *team* task scores — the companion to `weeklyTaskScores` for
+ * team-format tasks (see `tasks.ts`). Each key is a team task's id mapping to
+ * that week's points: one `teamId: points` entry per squad.
+ *
+ * A team's points are awarded to the team (driving the separate team
+ * leaderboard) *and* to every one of its members (so the individual standings
+ * stay complete). Finishing positions among teams are derived automatically
+ * (see `buildTeamScores`), exactly like the individual table — so to publish a
+ * team week you only fill in that week's object here.
+ *
+ * Empty objects are placeholders for team tasks that have not been scored yet.
+ * This becomes a Supabase table/query later; keep the exported shapes stable.
+ */
+export const weeklyTeamScores: Record<string, Record<string, number>> = {
+  // week-04 is the first team task. Fill in each squad's points once scored.
+  "week-04": {},
+};
+
 // Roster order, used only as a deterministic tie-breaker when two players
 // earn the same points on a task so finishing positions stay stable.
 const rosterIndex = new Map(players.map((p, index) => [p.id, index]));
 
+// Team order, the equivalent deterministic tie-breaker for team standings.
+const teamOrderIndex = new Map(teams.map((t, index) => [t.id, index]));
+
 /**
- * Expands the static weekly points into flat `Score` records. Finishing
- * positions are derived by ranking each task's players by points (highest
- * first), breaking ties by roster order so the output is deterministic.
- * Weeks with no recorded points are skipped.
+ * Ranks `{ id, points }` entries highest-first and assigns standard
+ * competition finishing positions (ties share a position, the next position
+ * skips accordingly: …3, 3, 5). Ties are broken by `tieIndex` so the output
+ * is deterministic. Shared by both the individual and team scoring passes.
  */
-function buildScores(): Score[] {
-  const result: Score[] = [];
+function rankByPoints(
+  entries: { id: string; points: number }[],
+  tieIndex: Map<string, number>,
+): { id: string; points: number; position: number }[] {
+  const ranked = [...entries].sort(
+    (a, b) =>
+      b.points - a.points ||
+      (tieIndex.get(a.id) ?? 0) - (tieIndex.get(b.id) ?? 0),
+  );
+
+  let previousPoints: number | null = null;
+  let sharedPosition = 0;
+  return ranked.map((entry, index) => {
+    const position =
+      entry.points === previousPoints ? sharedPosition : index + 1;
+    previousPoints = entry.points;
+    sharedPosition = position;
+    return { ...entry, position };
+  });
+}
+
+/**
+ * Team results per team task, ranked. Weeks with no recorded team points are
+ * skipped. This is the raw record the team leaderboard is derived from.
+ */
+function buildTeamScores(): TeamScore[] {
+  const result: TeamScore[] = [];
 
   for (const task of tasks) {
-    const weekScores = weeklyTaskScores[task.id];
+    if (task.format !== "team") continue;
+    const weekScores = weeklyTeamScores[task.id];
     if (!weekScores) continue;
 
-    const ranked = Object.entries(weekScores)
-      .map(([playerId, points]) => ({ playerId, points }))
-      .sort(
-        (a, b) =>
-          b.points - a.points ||
-          (rosterIndex.get(a.playerId) ?? 0) -
-            (rosterIndex.get(b.playerId) ?? 0),
-      );
+    const ranked = rankByPoints(
+      Object.entries(weekScores).map(([teamId, points]) => ({
+        id: teamId,
+        points,
+      })),
+      teamOrderIndex,
+    );
 
-    // Standard competition ranking within the task: players level on points
-    // share a finishing position (e.g. two on the same points are joint 3rd),
-    // and the next position skips accordingly (…3, 3, 5).
-    let previousPoints: number | null = null;
-    let sharedPosition = 0;
-    ranked.forEach((entry, index) => {
-      const position =
-        entry.points === previousPoints ? sharedPosition : index + 1;
-      previousPoints = entry.points;
-      sharedPosition = position;
+    for (const entry of ranked) {
       result.push({
         taskId: task.id,
-        playerId: entry.playerId,
-        position,
+        teamId: entry.id,
         points: entry.points,
+        position: entry.position,
       });
-    });
+    }
   }
 
   return result;
 }
 
-// All scores for scored tasks. Later this becomes a Supabase query.
+// Team membership lookup for expanding team points down to each member.
+const membersByTeamId = new Map(teams.map((t) => [t.id, t.memberIds]));
+
+/**
+ * Expands the static weekly points into flat `Score` records. For individual
+ * tasks, players are ranked by points. For team tasks, each squad is ranked by
+ * its points and every member inherits the squad's points and finishing
+ * position — so the individual leaderboard reflects team results too. Ties
+ * share a position (…3, 3, 5). Weeks with no recorded points are skipped.
+ */
+function buildScores(): Score[] {
+  const result: Score[] = [];
+
+  for (const task of tasks) {
+    if (task.format === "team") {
+      for (const teamScore of teamScores.filter((t) => t.taskId === task.id)) {
+        const memberIds = membersByTeamId.get(teamScore.teamId) ?? [];
+        for (const playerId of memberIds) {
+          result.push({
+            taskId: task.id,
+            playerId,
+            position: teamScore.position,
+            points: teamScore.points,
+          });
+        }
+      }
+      continue;
+    }
+
+    const weekScores = weeklyTaskScores[task.id];
+    if (!weekScores) continue;
+
+    const ranked = rankByPoints(
+      Object.entries(weekScores).map(([playerId, points]) => ({
+        id: playerId,
+        points,
+      })),
+      rosterIndex,
+    );
+
+    for (const entry of ranked) {
+      result.push({
+        taskId: task.id,
+        playerId: entry.id,
+        position: entry.position,
+        points: entry.points,
+      });
+    }
+  }
+
+  return result;
+}
+
+// All team results for scored team tasks. Later this becomes a Supabase query.
+export const teamScores: TeamScore[] = buildTeamScores();
+
+// All individual scores (team-task points expanded to members included).
+// Later this becomes a Supabase query.
 export const scores: Score[] = buildScores();
 
 export function getScoresForTask(taskId: string): Score[] {
@@ -147,4 +242,8 @@ export function getScoresForTask(taskId: string): Score[] {
 
 export function getScoresForPlayer(playerId: string): Score[] {
   return scores.filter((s) => s.playerId === playerId);
+}
+
+export function getTeamScoresForTask(taskId: string): TeamScore[] {
+  return teamScores.filter((s) => s.taskId === taskId);
 }

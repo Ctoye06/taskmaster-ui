@@ -1,0 +1,229 @@
+---
+import type { GetStaticPaths } from "astro";
+import Layout from "../../layouts/Layout.astro";
+import TerminalWindow from "../../components/TerminalWindow.astro";
+import StatCard from "../../components/StatCard.astro";
+import ShareButton from "../../components/ShareButton.astro";
+import BackLink from "../../components/BackLink.astro";
+import PlayerAvatar from "../../components/PlayerAvatar.astro";
+import TaskStatusBadge from "../../components/TaskStatusBadge.astro";
+import { withBase } from "../../lib/url";
+import { teams } from "../../data/teams";
+import { getTeamTasks } from "../../data/tasks";
+import {
+  getTeamStanding,
+  getTeamResults,
+  getPlayerStanding,
+} from "../../data/queries";
+
+export const getStaticPaths = (() => {
+  return teams.map((team) => ({ params: { id: team.id } }));
+}) satisfies GetStaticPaths;
+
+const { id } = Astro.params;
+const standing = getTeamStanding(id!);
+
+// Unknown id → 404 rather than a broken page.
+if (!standing) {
+  return Astro.redirect("/404");
+}
+
+const { team, members, rank } = standing;
+const hasPlayed = standing.tasksCompleted > 0;
+
+// Each member's individual standing, best-ranked first, for the roster block.
+const roster = members
+  .map((player) => ({ player, row: getPlayerStanding(player.id) }))
+  .sort((a, b) => (a.row?.rank ?? Infinity) - (b.row?.rank ?? Infinity));
+
+// This squad's result on every team task (scored or not), newest week first.
+const teamTaskLog = getTeamTasks()
+  .map((task) => ({
+    task,
+    result: getTeamResults(task.id).find((r) => r.team.id === team.id),
+  }))
+  .sort((a, b) => b.task.weekNumber - a.task.weekNumber);
+
+const pageDescription = hasPlayed
+  ? `${team.name} is #${rank} on the EAYL Taskmaster team leaderboard with ${standing.points} pts from ${standing.tasksCompleted} team task${standing.tasksCompleted === 1 ? "" : "s"}.`
+  : `${team.name} is a ${members.length}-player EAYL Taskmaster squad, awaiting its first team task.`;
+
+const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+const weekLabel = (n: number) => `WEEK ${String(n).padStart(2, "0")}`;
+
+const positionClasses = (position: number) => {
+  if (position === 1) return "border-acid-dim bg-acid/10 text-acid";
+  if (position <= 3) return "border-cyan/40 bg-cyan/5 text-cyan";
+  return "border-grid bg-term-bg text-ink-dim";
+};
+---
+
+<Layout title={team.name} description={pageDescription}>
+  <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Back link + share -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <BackLink href="/teams" label="ALL TEAMS" />
+      <ShareButton
+        url={new URL(Astro.url.pathname, Astro.site).href}
+        shareTitle={`${team.name} · EAYL Taskmaster`}
+        shareText={pageDescription}
+        label="SHARE SQUAD"
+      />
+    </div>
+
+    <!-- Header -->
+    <header class="mt-6">
+      <p
+        class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        cat ~/teams/{team.id}.md
+      </p>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <h1
+          class="text-4xl font-extrabold tracking-tight text-ink text-glow sm:text-5xl"
+        >
+          {team.name}
+        </h1>
+        {
+          hasPlayed && medal && (
+            <span class="text-3xl" aria-hidden="true">
+              {medal}
+            </span>
+          )
+        }
+      </div>
+      {
+        team.tagline && (
+          <p class="mt-2 text-sm text-ink-dim">
+            <span class="text-acid">$</span> {team.tagline}
+          </p>
+        )
+      }
+    </header>
+
+    <!-- Summary stats -->
+    <section class="mt-8">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          value={hasPlayed ? `#${rank}` : "—"}
+          label="Team rank"
+          command="rank --team"
+          accent="magenta"
+        />
+        <StatCard
+          value={standing.points}
+          label="Team points"
+          command="sum points"
+          accent="acid"
+        />
+        <StatCard
+          value={standing.tasksCompleted}
+          label="Team tasks played"
+          command="count --done"
+          accent="cyan"
+        />
+        <StatCard
+          value={members.length}
+          label="Squad size"
+          command="count members"
+          accent="amber"
+        />
+      </div>
+    </section>
+
+    <!-- Squad roster -->
+    <section class="mt-10">
+      <TerminalWindow title={`~/teams/${team.id}/roster`}>
+        <ul class="divide-y divide-grid-soft">
+          {
+            roster.map(({ player, row }) => (
+              <li>
+                <a
+                  href={withBase(`/players/${player.id}`)}
+                  class="group flex items-center gap-3 px-2 py-3 transition-colors hover:bg-term-panel-2"
+                >
+                  <PlayerAvatar player={player} class="h-10 w-10 rounded" />
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-bold text-ink group-hover:text-acid">
+                      {player.name}
+                    </span>
+                    <span class="block text-[11px] text-ink-faint">
+                      {row && row.tasksCompleted > 0
+                        ? `#${row.rank} overall · ${row.wins} ${row.wins === 1 ? "win" : "wins"}`
+                        : "yet to score"}
+                    </span>
+                  </span>
+                  <span class="text-right">
+                    <span class="text-base font-extrabold tabular-nums text-acid">
+                      {row?.points ?? 0}
+                    </span>
+                    <span class="ml-1 text-[10px] tracking-widest text-ink-faint">
+                      PTS
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </TerminalWindow>
+    </section>
+
+    <!-- Team task log -->
+    <section class="mt-10">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        team --tasks
+      </h2>
+      {
+        teamTaskLog.length === 0 ? (
+          <p class="rounded-lg border border-grid border-dashed bg-term-panel/60 px-4 py-6 text-sm text-ink-dim">
+            <span class="text-amber">&gt;</span> No team tasks scheduled yet.
+          </p>
+        ) : (
+          <ul class="space-y-3">
+            {teamTaskLog.map(({ task, result }) => (
+              <li class="flex items-center gap-4 rounded-lg border border-grid bg-term-panel p-4">
+                <span class="w-14 shrink-0 text-[10px] font-bold tracking-[0.2em] text-ink-faint uppercase">
+                  {weekLabel(task.weekNumber)}
+                </span>
+                <span class="min-w-0 flex-1">
+                  <a
+                    href={withBase(`/tasks/${task.id}`)}
+                    class="truncate text-sm font-bold text-ink transition-colors hover:text-acid"
+                  >
+                    {task.title && task.title !== "???" ? task.title : "???"}
+                  </a>
+                </span>
+                {result ? (
+                  <>
+                    <span
+                      class:list={[
+                        "inline-flex items-center rounded border px-2 py-0.5 text-xs font-bold tabular-nums",
+                        positionClasses(result.position),
+                      ]}
+                    >
+                      {result.position === 1 ? "🥇 " : ""}
+                      {`P${result.position}`}
+                    </span>
+                    <span class="w-16 text-right">
+                      <span class="text-lg font-extrabold tabular-nums text-acid">
+                        {result.points}
+                      </span>
+                      <span class="ml-1 text-[10px] tracking-widest text-ink-faint">
+                        PTS
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  <TaskStatusBadge status={task.status} />
+                )}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+  </div>
+</Layout>

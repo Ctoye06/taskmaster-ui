@@ -1,5 +1,7 @@
 ---
 // Footer styled as a terminal status/exit line.
+import { withBase } from "../lib/url";
+
 const year = new Date().getFullYear();
 ---
 
@@ -14,8 +16,11 @@ const year = new Date().getFullYear();
     <p class="flex items-center gap-2">
       <span class="h-2 w-2 rounded-full bg-dot-green"></span>
       <span
-        >system nominal (for now) &middot; A Callum Mohan Production &middot;
-        &copy; {year}</span
+        >system nominal (for now) &middot; <a
+          href={withBase("/about")}
+          class="text-ink-faint underline-offset-2 transition-colors hover:text-acid hover:underline"
+          >A Callum Mohan Production</a
+        > &middot; &copy; {year}</span
       >
     </p>
   </div>

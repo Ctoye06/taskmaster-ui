@@ -1,0 +1,101 @@
+---
+import type { TeamStanding } from "../types";
+import { withBase } from "../lib/url";
+import PlayerAvatar from "./PlayerAvatar.astro";
+
+interface Props {
+  standing: TeamStanding;
+  class?: string;
+}
+
+const { standing, class: className = "" } = Astro.props;
+const { team, members, rank } = standing;
+
+const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+
+// Emphasise the podium positions with a tinted frame, mirroring PlayerCard.
+const frame =
+  rank === 1
+    ? "border-amber/40 bg-amber/5 ring-1 ring-amber/20"
+    : rank === 2
+      ? "border-ink-dim/30 bg-ink/5"
+      : rank === 3
+        ? "border-acid-dim/40 bg-acid/5"
+        : "border-grid bg-term-panel";
+
+// Pre-season (no team task scored yet): show the roster, not a false rank.
+const hasPlayed = standing.tasksCompleted > 0;
+---
+
+<a
+  href={withBase(`/teams/${team.id}`)}
+  class:list={[
+    "group relative flex flex-col overflow-hidden rounded-xl border p-4 transition-colors hover:border-ink-faint sm:p-5",
+    frame,
+    className,
+  ]}
+>
+  <!-- Faint rank watermark -->
+  <span
+    class="pointer-events-none absolute top-1 right-3 text-5xl font-extrabold tabular-nums text-ink-faint opacity-10 select-none"
+    aria-hidden="true"
+  >
+    {String(rank).padStart(2, "0")}
+  </span>
+
+  <div class="flex items-center gap-3">
+    <span
+      class="flex w-7 shrink-0 justify-center text-lg font-extrabold tabular-nums"
+    >
+      {
+        hasPlayed && medal ? (
+          <span aria-hidden="true">{medal}</span>
+        ) : (
+          <span class="text-ink-faint">{String(rank).padStart(2, "0")}</span>
+        )
+      }
+      <span class="sr-only">Team rank {rank}</span>
+    </span>
+
+    <span class="min-w-0 flex-1">
+      <span
+        class="block truncate text-base font-extrabold text-ink group-hover:text-acid"
+      >
+        {team.name}
+      </span>
+      <span class="block truncate text-[11px] text-ink-faint">
+        {team.tagline ? <span class="text-acid">$</span> : null}
+        {" "}
+        {team.tagline || `${members.length} players`}
+      </span>
+    </span>
+  </div>
+
+  <!-- Member roster -->
+  <ul
+    class="mt-4 flex flex-wrap items-center gap-1.5"
+    aria-label="Squad members"
+  >
+    {
+      members.map((member) => (
+        <li class="flex items-center">
+          <PlayerAvatar player={member} class="h-7 w-7 rounded" />
+          <span class="sr-only">{member.name}</span>
+        </li>
+      ))
+    }
+    <li class="ml-1 text-[11px] text-ink-dim">{members.length} players</li>
+  </ul>
+
+  <div class="mt-4 flex items-end justify-between border-t border-grid pt-3">
+    <span class="text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+      {hasPlayed ? "team score" : "awaiting first team task"}
+    </span>
+    <span>
+      <span class="text-2xl font-extrabold tabular-nums text-acid">
+        {standing.points}
+      </span>
+      <span class="ml-1 text-[10px] tracking-widest text-ink-faint">PTS</span>
+    </span>
+  </div>
+</a>

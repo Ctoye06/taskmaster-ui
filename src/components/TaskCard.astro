@@ -10,9 +10,10 @@ interface Props {
 }
 
 const { summary, class: className = "" } = Astro.props;
-const { task, winner, winningScore } = summary;
+const { task, winner, winningScore, winningTeam } = summary;
 
 const status = task.status;
+const isTeam = task.format === "team";
 const weekLabel = `WEEK ${String(task.weekNumber).padStart(2, "0")}`;
 
 // Live tasks get extra emphasis; locked (upcoming) tasks read as dimmed.
@@ -59,7 +60,16 @@ const releaseLabel = dayFmt.format(new Date(task.releaseDate));
     >
       {weekLabel}
     </span>
-    <TaskStatusBadge status={status} />
+    <div class="flex items-center gap-2">
+      {
+        isTeam && (
+          <span class="inline-flex items-center rounded border border-magenta/40 bg-magenta/10 px-2 py-0.5 text-[10px] font-bold tracking-[0.2em] text-magenta">
+            TEAM
+          </span>
+        )
+      }
+      <TaskStatusBadge status={status} />
+    </div>
   </div>
 
   {
@@ -88,7 +98,23 @@ const releaseLabel = dayFmt.format(new Date(task.releaseDate));
           {task.description}
         </p>
 
-        {status === "completed" && winner && (
+        {status === "completed" && isTeam && winningTeam && (
+          <div class="mt-4 flex items-center justify-between gap-3 border-t border-grid pt-4">
+            <div>
+              <p class="text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+                Winning squad
+              </p>
+              <p class="mt-0.5 text-sm font-bold text-ink">
+                🏆 {winningTeam.name}
+              </p>
+            </div>
+            {winningScore !== undefined && (
+              <ScoreBadge points={winningScore} position={1} />
+            )}
+          </div>
+        )}
+
+        {status === "completed" && !isTeam && winner && (
           <div class="mt-4 flex items-center justify-between gap-3 border-t border-grid pt-4">
             <div>
               <p class="text-[10px] tracking-[0.2em] text-ink-faint uppercase">

@@ -22,12 +22,18 @@ import type {
   Task,
   TaskPager,
   TaskPagerLink,
+  Team,
+  TeamScore,
+  TeamStanding,
+  TeamStats,
+  TeamTaskResultRow,
   WeekRecap,
   WhatsNewInfo,
 } from "../types";
 import { players, getPlayerById } from "./players";
-import { tasks, getTaskById, getCurrentTask } from "./tasks";
-import { scores } from "./scores";
+import { tasks, getTaskById, getCurrentTask, getTeamTasks } from "./tasks";
+import { scores, teamScores } from "./scores";
+import { teams, getTeamById, getTeamForPlayer } from "./teams";
 import { getRecapContent } from "./recaps";
 import { withBase } from "../lib/url";
 
@@ -212,6 +218,8 @@ export function getTaskSummary(taskId: string): TaskSummary | undefined {
     task,
     winner: top?.player,
     winningScore: top?.points,
+    winningTeam:
+      task.format === "team" ? getTeamResults(taskId)[0]?.team : undefined,
   };
 }
 
@@ -221,8 +229,154 @@ export function getTaskSummaries(): TaskSummary[] {
     .sort((a, b) => a.weekNumber - b.weekNumber)
     .map((task) => {
       const [top] = getTaskResults(task.id);
-      return { task, winner: top?.player, winningScore: top?.points };
+      return {
+        task,
+        winner: top?.player,
+        winningScore: top?.points,
+        winningTeam:
+          task.format === "team" ? getTeamResults(task.id)[0]?.team : undefined,
+      };
     });
+}
+
+// ─── Teams ───────────────────────────────────────────────────────────────
+// The team leaderboard and team task results, derived from `teamScores` the
+// same way the individual standings are derived from `scores`. Team-format
+// task points are awarded to each squad here (and to its members in the
+// individual table), so both leaderboards stay consistent.
+
+/** Resolve a team's member ids to full Player records (unknown ids dropped). */
+function resolveMembers(team: Team): Player[] {
+  return team.memberIds
+    .map((id) => getPlayerById(id))
+    .filter((p): p is Player => p !== undefined);
+}
+
+/**
+ * Builds and ranks the team standings from an arbitrary set of team scores.
+ * Used for the current team table and for historical snapshots (movement).
+ */
+function computeTeamStandings(teamScoreSet: TeamScore[]): TeamStanding[] {
+  const rows = teams.map((team) => {
+    const teamResults = teamScoreSet
+      .filter((s) => s.teamId === team.id)
+      .sort(
+        (a, b) =>
+          (completedWeekByTask.get(a.taskId) ?? 0) -
+          (completedWeekByTask.get(b.taskId) ?? 0),
+      );
+
+    const points = teamResults.reduce((sum, s) => sum + s.points, 0);
+    const wins = teamResults.filter((s) => s.position === 1).length;
+    const tasksCompleted = teamResults.length;
+    const averagePosition =
+      tasksCompleted > 0
+        ? teamResults.reduce((sum, s) => sum + s.position, 0) / tasksCompleted
+        : 0;
+    const form = teamResults.slice(-4).map((s) => s.position);
+
+    return {
+      team,
+      members: resolveMembers(team),
+      points,
+      wins,
+      tasksCompleted,
+      averagePosition,
+      form,
+    };
+  });
+
+  rows.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    return a.averagePosition - b.averagePosition;
+  });
+
+  // Standard competition ranking: teams level on points share a rank and the
+  // next rank skips accordingly (…3, 3, 5). Order within a tie follows the
+  // wins / average-position sort above.
+  let previousPoints: number | null = null;
+  let sharedRank = 0;
+  return rows.map((row, index) => {
+    const rank = row.points === previousPoints ? sharedRank : index + 1;
+    previousPoints = row.points;
+    sharedRank = rank;
+    return { rank, ...row };
+  });
+}
+
+/**
+ * Full team leaderboard, sorted by points (then wins, then average position).
+ * Every team appears even before any team task has been scored.
+ */
+export function getTeamLeaderboard(): TeamStanding[] {
+  return computeTeamStandings(teamScores);
+}
+
+/**
+ * The team leaderboard annotated with each squad's movement since the
+ * standings before the most recent scored team task (positive = climbed).
+ */
+export function getTeamLeaderboardWithMovement(): TeamStanding[] {
+  const current = getTeamLeaderboard();
+  const scoredWeeks = [
+    ...new Set(teamScores.map((s) => completedWeekByTask.get(s.taskId) ?? 0)),
+  ];
+
+  if (scoredWeeks.length < 2) return current;
+
+  const latestWeek = Math.max(...scoredWeeks);
+  const previousScores = teamScores.filter(
+    (s) => (completedWeekByTask.get(s.taskId) ?? Infinity) < latestWeek,
+  );
+  const previousRankByTeam = new Map(
+    computeTeamStandings(previousScores).map((row) => [row.team.id, row.rank]),
+  );
+
+  return current.map((row) => {
+    const previousRank = previousRankByTeam.get(row.team.id);
+    return {
+      ...row,
+      previousRank,
+      movement:
+        previousRank !== undefined ? previousRank - row.rank : undefined,
+    };
+  });
+}
+
+/** A single team's standing row, if the team exists. */
+export function getTeamStanding(teamId: string): TeamStanding | undefined {
+  return getTeamLeaderboard().find((row) => row.team.id === teamId);
+}
+
+/** Ordered results for a single team task (winning squad first). */
+export function getTeamResults(taskId: string): TeamTaskResultRow[] {
+  const rows: TeamTaskResultRow[] = [];
+  for (const s of teamScores.filter((s) => s.taskId === taskId)) {
+    const team = getTeamById(s.teamId);
+    if (!team) continue;
+    rows.push({
+      position: s.position,
+      team,
+      members: resolveMembers(team),
+      points: s.points,
+      comment: s.comment,
+    });
+  }
+  return rows.sort((a, b) => a.position - b.position);
+}
+
+/** Summary counts for the teams overview page. */
+export function getTeamStats(): TeamStats {
+  const sizes = teams.map((t) => t.memberIds.length);
+  const scoredTaskIds = new Set(teamScores.map((s) => s.taskId));
+  return {
+    totalTeams: teams.length,
+    minTeamSize: Math.min(...sizes),
+    maxTeamSize: Math.max(...sizes),
+    teamTasks: getTeamTasks().length,
+    teamTasksScored: scoredTaskIds.size,
+  };
 }
 
 /**
@@ -780,6 +934,14 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     keywords: "ranks table standings top",
   },
   {
+    id: "page-teams",
+    label: "Teams",
+    group: "page",
+    href: withBase("/teams"),
+    hint: "teams & team leaderboard",
+    keywords: "teams groups team standings four five",
+  },
+  {
     id: "page-recaps",
     label: "Recaps",
     group: "page",
@@ -811,6 +973,14 @@ const PALETTE_PAGES: CommandPaletteItem[] = [
     hint: "the roster",
     keywords: "competitors roster people",
   },
+  {
+    id: "page-about",
+    label: "About",
+    group: "page",
+    href: withBase("/about"),
+    hint: "what this is & the taskmaster",
+    keywords: "about info taskmaster callum mohan how it works",
+  },
 ];
 
 /**
@@ -834,23 +1004,42 @@ export function getCommandPaletteItems(): CommandPaletteItem[] {
       };
     });
 
+  const teamStandingById = new Map(
+    getTeamLeaderboard().map((row) => [row.team.id, row]),
+  );
+
+  const teamItems: CommandPaletteItem[] = teams.map((team) => {
+    const row = teamStandingById.get(team.id);
+    return {
+      id: `team-${team.id}`,
+      label: team.name,
+      group: "team" as const,
+      href: withBase(`/teams/${team.id}`),
+      hint: row
+        ? `rank #${row.rank} · ${row.points} pts · ${row.members.length} players`
+        : "squad",
+      keywords: `team squad ${team.memberIds.join(" ")} ${team.tagline ?? ""}`,
+    };
+  });
+
   const standingByPlayer = new Map(
     getLeaderboard().map((row) => [row.player.id, row]),
   );
 
   const playerItems: CommandPaletteItem[] = players.map((player) => {
     const row = standingByPlayer.get(player.id);
+    const team = getTeamForPlayer(player.id);
     return {
       id: `player-${player.id}`,
       label: player.name,
       group: "player" as const,
       href: withBase(`/players/${player.id}`),
       hint: row ? `rank #${row.rank} · ${row.points} pts` : "unranked",
-      keywords: player.team ?? "",
+      keywords: [player.team, team?.name].filter(Boolean).join(" "),
     };
   });
 
-  return [...PALETTE_PAGES, ...taskItems, ...playerItems];
+  return [...PALETTE_PAGES, ...taskItems, ...teamItems, ...playerItems];
 }
 
 /**

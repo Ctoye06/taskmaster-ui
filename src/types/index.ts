@@ -5,6 +5,16 @@
 
 export type TaskStatus = "upcoming" | "live" | "completed";
 
+/**
+ * How a task is contested and scored:
+ *   "individual" → every player competes and is scored on their own.
+ *   "team"       → players compete in fixed teams; the squad's points are
+ *                  awarded to the team *and* to each of its members, so the
+ *                  individual standings stay complete while a separate team
+ *                  leaderboard is also derived (see `data/queries.ts`).
+ */
+export type TaskFormat = "individual" | "team";
+
 export interface Player {
   id: string;
   name: string;
@@ -12,6 +22,20 @@ export interface Player {
   team?: string;
   /** Optional avatar image. When absent, a generated icon is rendered. */
   avatarUrl?: string;
+}
+
+/**
+ * A fixed squad of players (4–5) for team-format tasks. `memberIds` is the
+ * single source of truth for who is on the team; the roster order is
+ * irrelevant. Becomes a Supabase table later — keep the shape stable.
+ */
+export interface Team {
+  id: string;
+  name: string;
+  /** Player ids that make up the squad (4–5 members). */
+  memberIds: string[];
+  /** Short command-style tagline shown on the team's card/page. */
+  tagline?: string;
 }
 
 export interface Task {
@@ -29,6 +53,8 @@ export interface Task {
   releaseDate: string; // ISO 8601
   deadline: string; // ISO 8601
   status: TaskStatus;
+  /** Whether the task is contested individually or in teams. */
+  format: TaskFormat;
 }
 
 export interface Score {
@@ -36,6 +62,19 @@ export interface Score {
   playerId: string;
   points: number;
   /** Finishing position for the task (1 = winner). */
+  position: number;
+  comment?: string;
+}
+
+/**
+ * A team's result on a single team-format task. The raw record the team
+ * leaderboard is derived from; becomes a Supabase row later.
+ */
+export interface TeamScore {
+  taskId: string;
+  teamId: string;
+  points: number;
+  /** Finishing position for the task among teams (1 = winning team). */
   position: number;
   comment?: string;
 }
@@ -68,10 +107,12 @@ export interface TaskResult {
 /** A task plus its outcome, used by task cards and the tasks grid. */
 export interface TaskSummary {
   task: Task;
-  /** Winner of a completed task, if any. */
+  /** Winner of a completed individual task, if any. */
   winner?: Player;
   /** The winner's score for a completed task, if any. */
   winningScore?: number;
+  /** Winning squad of a completed team task, if any. */
+  winningTeam?: Team;
 }
 
 /** One row of a completed task's full results table. */
@@ -80,6 +121,51 @@ export interface TaskResultRow {
   player: Player;
   points: number;
   comment?: string;
+}
+
+// ─── Team view models ───────────────────────────────────────────────────
+// Derived, ready-to-render team data. Mirrors the individual view models
+// (LeaderboardRow / TaskResultRow) so the UI patterns stay consistent.
+
+/** A team's row in the team leaderboard, with its members resolved. */
+export interface TeamStanding {
+  rank: number;
+  team: Team;
+  members: Player[];
+  points: number;
+  /** Team tasks the squad has been scored on. */
+  tasksCompleted: number;
+  /** Team tasks the squad has won. */
+  wins: number;
+  averagePosition: number;
+  /** Recent finishing positions, most recent last. */
+  form: number[];
+  /** Rank on the team standings before the most recent scored team task. */
+  previousRank?: number;
+  /** Places gained since the previous team standings (positive = moved up). */
+  movement?: number;
+}
+
+/** One row of a completed team task's results table. */
+export interface TeamTaskResultRow {
+  position: number;
+  team: Team;
+  members: Player[];
+  points: number;
+  comment?: string;
+}
+
+/** Summary counts for the teams overview page. */
+export interface TeamStats {
+  totalTeams: number;
+  /** Smallest squad size across all teams. */
+  minTeamSize: number;
+  /** Largest squad size across all teams. */
+  maxTeamSize: number;
+  /** Team-format tasks on the schedule. */
+  teamTasks: number;
+  /** Team-format tasks that have been scored. */
+  teamTasksScored: number;
 }
 
 /**
@@ -168,7 +254,7 @@ export interface PlayerComparison {
 }
 
 /** Which bucket a command-palette entry belongs to (section + icon). */
-export type CommandPaletteGroup = "page" | "task" | "player";
+export type CommandPaletteGroup = "page" | "task" | "team" | "player";
 
 /** A single searchable destination in the global command palette. */
 export interface CommandPaletteItem {

@@ -1,0 +1,106 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import TeamCard from "../../components/TeamCard.astro";
+import StatCard from "../../components/StatCard.astro";
+import { getTeamLeaderboard, getTeamStats } from "../../data/queries";
+
+const standings = getTeamLeaderboard();
+const stats = getTeamStats();
+
+// Pre-season: no team task scored yet. The board is ranked by roster order
+// until the first squad task is played, so flag it rather than imply results.
+const preSeason = stats.teamTasksScored === 0;
+
+const sizeLabel =
+  stats.minTeamSize === stats.maxTeamSize
+    ? String(stats.minTeamSize)
+    : `${stats.minTeamSize}–${stats.maxTeamSize}`;
+---
+
+<Layout
+  title="Teams"
+  description="The EAYL Taskmaster teams for team-based tasks, and the team leaderboard."
+>
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <!-- Page header -->
+    <header>
+      <p
+        class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        ls ~/teams
+      </p>
+      <h1
+        class="mt-3 text-4xl font-extrabold tracking-tight text-ink sm:text-6xl"
+      >
+        THE <span class="text-acid text-glow">TEAMS</span>
+      </h1>
+      <p
+        class="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim sm:text-base"
+      >
+        <span class="text-acid">// </span>
+        {stats.totalTeams} teams of {sizeLabel}. For team tasks, a squad's
+        points are shared by every member — and these standings track the teams
+        head to head.
+      </p>
+    </header>
+
+    <!-- Summary stats -->
+    <section class="mt-8">
+      <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          value={stats.totalTeams}
+          label="Teams competing"
+          command="count teams"
+          accent="acid"
+        />
+        <StatCard
+          value={sizeLabel}
+          label="Players per squad"
+          command="team --size"
+          accent="magenta"
+        />
+        <StatCard
+          value={stats.teamTasks}
+          label="Team tasks scheduled"
+          command="tasks --team"
+          accent="cyan"
+        />
+        <StatCard
+          value={stats.teamTasksScored}
+          label="Team tasks scored"
+          command="tasks --team --done"
+          accent="amber"
+        />
+      </div>
+    </section>
+
+    <!-- Pre-season notice -->
+    {
+      preSeason && (
+        <p class="mt-8 rounded-lg border border-grid border-dashed bg-term-panel/60 px-4 py-4 text-sm text-ink-dim">
+          <span class="text-amber">&gt;</span> No team task has been scored yet.
+          Teams are listed below in roster order — the board goes live the
+          moment the first team brief is marked.
+        </p>
+      )
+    }
+
+    <!-- Team leaderboard / squad grid -->
+    <section class="mt-12">
+      <h2
+        class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        teams --standings
+      </h2>
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+        {
+          standings.map((standing) => (
+            <li>
+              <TeamCard standing={standing} class="h-full" />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+</Layout>

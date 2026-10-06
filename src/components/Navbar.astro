@@ -26,6 +26,7 @@ const navGroups: NavGroup[] = [
     label: "rankings",
     children: [
       { href: "/leaderboard", label: "leaderboard" },
+      { href: "/teams", label: "teams" },
       { href: "/stats", label: "stats" },
     ],
   },
@@ -141,6 +142,28 @@ const isGroupActive = (group: NavGroup) =>
           </li>
         ))
       }
+      <li>
+        <a
+          href={withBase("/about")}
+          aria-current={isActive("/about") ? "page" : undefined}
+          class:list={[
+            "group inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-2 py-2 text-sm tracking-wide transition-colors",
+            isActive("/about") ? "text-acid" : "text-ink-dim hover:text-ink",
+          ]}
+        >
+          <span
+            class:list={[
+              "mr-1",
+              isActive("/about")
+                ? "text-acid"
+                : "text-ink-faint group-hover:text-acid",
+            ]}
+          >
+            ./
+          </span>
+          about
+        </a>
+      </li>
       <li>
         <button
           type="button"
@@ -274,6 +297,23 @@ const isGroupActive = (group: NavGroup) =>
           </li>
         ))
       }
+      <li class="border-b border-grid-soft py-2 last:border-b-0">
+        <a
+          href={withBase("/about")}
+          aria-current={isActive("/about") ? "page" : undefined}
+          class:list={[
+            "flex items-center gap-2 py-2 text-sm tracking-wide",
+            isActive("/about") ? "text-acid" : "text-ink-dim",
+          ]}
+        >
+          <span
+            class:list={[isActive("/about") ? "text-acid" : "text-ink-faint"]}
+          >
+            ./
+          </span>
+          about
+        </a>
+      </li>
     </ul>
   </div>
 </header>

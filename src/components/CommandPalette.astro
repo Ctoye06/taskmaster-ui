@@ -2,7 +2,7 @@
 import type { CommandPaletteItem } from "../types";
 
 interface Props {
-  /** Full searchable index of pages, tasks and players. */
+  /** Full searchable index of pages, tasks, teams and players. */
   items: CommandPaletteItem[];
   class?: string;
 }
@@ -57,7 +57,7 @@ const { items, class: className = "" } = Astro.props;
         autocorrect="off"
         autocapitalize="off"
         spellcheck="false"
-        placeholder="jump to a page, task or player…"
+        placeholder="jump to a page, task, team or player…"
         class="w-full bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none"
         role="combobox"
         aria-expanded="true"
@@ -106,7 +106,7 @@ const { items, class: className = "" } = Astro.props;
   interface PaletteItem {
     id: string;
     label: string;
-    group: "page" | "task" | "player";
+    group: "page" | "task" | "team" | "player";
     href: string;
     hint?: string;
     keywords?: string;
@@ -129,14 +129,21 @@ const { items, class: className = "" } = Astro.props;
     const groupGlyph: Record<PaletteItem["group"], string> = {
       page: "./",
       task: "#",
+      team: "&",
       player: "@",
     };
     const groupLabel: Record<PaletteItem["group"], string> = {
       page: "pages",
       task: "tasks",
+      team: "teams",
       player: "players",
     };
-    const groupOrder: PaletteItem["group"][] = ["page", "task", "player"];
+    const groupOrder: PaletteItem["group"][] = [
+      "page",
+      "task",
+      "team",
+      "player",
+    ];
 
     let options: HTMLLIElement[] = [];
     let activeIndex = 0;

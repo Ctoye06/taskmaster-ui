@@ -16,7 +16,9 @@ import {
   getTaskResults,
   getTaskPager,
   getRecapTaskIds,
+  getTeamResults,
 } from "../../data/queries";
+import { teams } from "../../data/teams";
 
 export const getStaticPaths = (() => {
   return tasks.map((task) => ({ params: { id: task.id } }));
@@ -30,8 +32,11 @@ if (!summary) {
   return Astro.redirect("/404");
 }
 
-const { task, winner, winningScore } = summary;
+const { task, winner, winningScore, winningTeam } = summary;
+const isTeam = task.format === "team";
 const results = task.status === "completed" ? getTaskResults(task.id) : [];
+const teamResults =
+  isTeam && task.status === "completed" ? getTeamResults(task.id) : [];
 const pager = getTaskPager(task.id);
 const hasRecap = getRecapTaskIds().includes(task.id);
 
@@ -94,6 +99,13 @@ const medal = (position: number) =>
           {weekLabel}
         </span>
         <TaskStatusBadge status={task.status} />
+        {
+          isTeam && (
+            <span class="inline-flex items-center rounded border border-magenta/40 bg-magenta/10 px-2 py-0.5 text-[10px] font-bold tracking-[0.2em] text-magenta">
+              TEAM TASK
+            </span>
+          )
+        }
       </div>
       <h1
         class="mt-3 text-4xl font-extrabold leading-tight text-ink text-glow sm:text-6xl"
@@ -222,6 +234,54 @@ const medal = (position: number) =>
       </div>
     </section>
 
+    <!-- Participating teams (team tasks only) -->
+    {
+      isTeam && (
+        <section class="mt-8">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            teams --playing
+          </h2>
+          <p class="mb-4 text-sm leading-relaxed text-ink-dim">
+            <span class="text-magenta">// </span>
+            This is a team task. Players compete in their fixed teams of 4–5;
+            the squad's points are shared by every member and also decide the
+            <a
+              href={withBase("/teams")}
+              class="text-cyan underline-offset-2 hover:underline"
+            >
+              {" "}
+              team leaderboard
+            </a>
+            .
+          </p>
+          <ul class="grid gap-3 sm:grid-cols-2">
+            {teams.map((team) => (
+              <li>
+                <a
+                  href={withBase(`/teams/${team.id}`)}
+                  class="group flex h-full flex-col rounded-lg border border-grid bg-term-panel p-4 transition-colors hover:border-magenta"
+                >
+                  <span class="flex items-center justify-between gap-2">
+                    <span class="text-sm font-extrabold text-ink group-hover:text-magenta">
+                      {team.name}
+                    </span>
+                    <span class="text-[10px] tracking-widest text-ink-faint uppercase">
+                      {team.memberIds.length} players
+                    </span>
+                  </span>
+                  {team.tagline && (
+                    <span class="mt-1 text-[11px] text-ink-faint">
+                      <span class="text-acid">$</span> {team.tagline}
+                    </span>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
     <!-- Rules -->
     {
       !isLocked && (
@@ -243,9 +303,9 @@ const medal = (position: number) =>
       )
     }
 
-    <!-- Results (completed only) -->
+    <!-- Results — individual tasks (completed only) -->
     {
-      task.status === "completed" && winner && (
+      task.status === "completed" && !isTeam && winner && (
         <section class="mt-10">
           <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
             results --final
@@ -331,6 +391,96 @@ const medal = (position: number) =>
               {results.length} players
             </p>
           )}
+        </section>
+      )
+    }
+
+    <!-- Results — team tasks (completed only) -->
+    {
+      task.status === "completed" && isTeam && winningTeam && (
+        <section class="mt-10">
+          <h2 class="prompt mb-4 text-xs font-bold tracking-[0.3em] text-ink-dim uppercase">
+            results --team --final
+          </h2>
+
+          {/* Winning squad spotlight */}
+          <div class="mb-6 overflow-hidden rounded-xl border border-amber/40 bg-amber/5 p-6 text-center ring-1 ring-amber/20">
+            <p class="text-[10px] tracking-[0.4em] text-amber uppercase">
+              Winning squad
+            </p>
+            <p class="mt-2 text-4xl" aria-hidden="true">
+              🏆
+            </p>
+            <a
+              href={withBase(`/teams/${winningTeam.id}`)}
+              class="mt-1 inline-block text-3xl font-extrabold text-ink text-glow hover:text-acid"
+            >
+              {winningTeam.name}
+            </a>
+            {winningScore !== undefined && (
+              <p class="mt-2 text-sm font-bold tracking-widest text-amber">
+                {winningScore} POINTS
+              </p>
+            )}
+          </div>
+
+          {/* Full team results table */}
+          <div class="overflow-hidden rounded-lg border border-grid">
+            <table class="w-full text-left text-sm">
+              <caption class="sr-only">
+                Final team results for {weekLabel}: {task.title}
+              </caption>
+              <thead>
+                <tr class="border-b border-grid bg-term-bg/60 text-[10px] tracking-[0.2em] text-ink-faint uppercase">
+                  <th scope="col" class="px-4 py-3 font-semibold">
+                    Pos
+                  </th>
+                  <th scope="col" class="px-4 py-3 font-semibold">
+                    Squad
+                  </th>
+                  <th scope="col" class="px-4 py-3 text-right font-semibold">
+                    Points
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {teamResults.map((row) => (
+                  <tr class="border-b border-grid-soft last:border-b-0 hover:bg-term-panel/60">
+                    <td class="px-4 py-3">
+                      <span class="font-bold tabular-nums">
+                        {medal(row.position) ?? (
+                          <span class="text-ink-faint">
+                            {String(row.position).padStart(2, "0")}
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <a
+                        href={withBase(`/teams/${row.team.id}`)}
+                        class="group inline-flex items-center gap-3"
+                      >
+                        <span class="flex -space-x-2" aria-hidden="true">
+                          {row.members.slice(0, 5).map((member) => (
+                            <PlayerAvatar
+                              player={member}
+                              class="h-7 w-7 rounded border border-term-bg"
+                            />
+                          ))}
+                        </span>
+                        <span class="font-semibold text-ink group-hover:text-acid">
+                          {row.team.name}
+                        </span>
+                      </a>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <ScoreBadge points={row.points} position={row.position} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )
     }
