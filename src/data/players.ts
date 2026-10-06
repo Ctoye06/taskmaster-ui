@@ -27,7 +27,7 @@ export const players: Player[] = [
   { id: "eimhear", name: "Eimhear", bio: "" },
   { id: "grace", name: "Grace", bio: "" },
   { id: "adam", name: "Adam", bio: "" },
-  { id: "andrew", name: "Andrew", bio: "" },
+  { id: "andrew", name: "Andrew", bio: "Future taskmaster winner" },
 ];
 
 export function getPlayerById(id: string): Player | undefined {
