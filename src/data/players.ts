@@ -6,7 +6,7 @@ export const players: Player[] = [
   { id: "eva", name: "Eva", bio: "" },
   { id: "rebekah", name: "Rebekah", bio: "" },
   { id: "karen", name: "Karen", bio: "" },
-  { id: "finnbar", name: "Finnbar", bio: "" },
+  { id: "finnbar", name: "Finnbar", bio: "Reluctantly optimistic" },
   { id: "eve", name: "Eve", bio: "" },
   { id: "luke", name: "Luke", bio: "" },
   { id: "rose", name: "Rose", bio: "" },
