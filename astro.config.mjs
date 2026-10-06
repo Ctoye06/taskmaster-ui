@@ -6,8 +6,7 @@ import sitemap from "@astrojs/sitemap";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://callum-mohan.github.io",
-  base: "/taskmaster-ui",
+  site: "https://www.eayltaskmaster.com",
   integrations: [
     sitemap({
       // The head-to-head pages are every ordered pair of players (~600 URLs).
