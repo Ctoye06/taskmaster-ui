@@ -6,7 +6,7 @@ export const players: Player[] = [
   { id: "eva", name: "Eva", bio: "" },
   { id: "rebekah", name: "Rebekah", bio: "" },
   { id: "karen", name: "Karen", bio: "" },
-  { id: "finnbar", name: "Finnbar", bio: "" },
+  { id: "finnbar", name: "Finnbar", bio: "Reluctantly optimistic" },
   { id: "eve", name: "Eve", bio: "" },
   { id: "luke", name: "Luke", bio: "" },
   { id: "rose", name: "Rose", bio: "" },
@@ -23,11 +23,11 @@ export const players: Player[] = [
   { id: "jake", name: "Jake", bio: "" },
   { id: "ryan", name: "Ryan", bio: "" },
   { id: "caolan_t", name: "Caolan T", bio: "" },
-  { id: "criostoir", name: "Criostoir", bio: "" },
+  { id: "criostoir", name: "Criostoir", bio: "one must imagine the best bio ever..." },
   { id: "eimhear", name: "Eimhear", bio: "" },
   { id: "grace", name: "Grace", bio: "" },
   { id: "adam", name: "Adam", bio: "" },
-  { id: "andrew", name: "Andrew", bio: "" },
+  { id: "andrew", name: "Andrew", bio: "Future taskmaster winner!!!" },
 ];
 
 export function getPlayerById(id: string): Player | undefined {
