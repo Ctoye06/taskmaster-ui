@@ -36,6 +36,8 @@ const { player, rank } = standing;
 const results = getPlayerResults(player.id);
 const team = getTeamForPlayer(player.id);
 
+const bio = player.bio?.trim() ?? "";
+
 const hasPlayed = standing.tasksCompleted > 0;
 const bestFinish = hasPlayed ? Math.min(...results.map((r) => r.position)) : 0;
 const compareOptions = getPlayerCompareOptions(player.id);
@@ -129,6 +131,27 @@ const positionClasses = (position: number) => {
         </div>
       </div>
     </header>
+
+    <!-- Bio -->
+    <section class="mt-6" aria-labelledby="bio-heading">
+      <p
+        id="bio-heading"
+        class="prompt text-xs font-bold tracking-[0.3em] text-ink-dim uppercase"
+      >
+        cat ~/players/{player.id}.bio
+      </p>
+      {
+        bio ? (
+          <p class="mt-3 max-w-prose text-sm leading-relaxed text-ink-dim">
+            {bio}
+          </p>
+        ) : (
+          <p class="mt-3 max-w-prose text-sm text-ink-faint italic">
+            No bio yet.
+          </p>
+        )
+      }
+    </section>
 
     <!-- Key stats -->
     <section class="mt-8">

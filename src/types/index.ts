@@ -22,6 +22,8 @@ export interface Player {
   team?: string;
   /** Optional avatar image. When absent, a generated icon is rendered. */
   avatarUrl?: string;
+  /** Short player bio. Empty for now; shown as a placeholder until filled in. */
+  bio?: string;
 }
 
 /**
